@@ -22,6 +22,13 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
   const scores   = useRef({ p1: 0, p2: 0 })
   const busy     = useRef(false)
 
+  // Animation state
+  const pieceAnims   = useRef(new Map()) // key → { start: timestamp }
+  const panAnim      = useRef(null)      // { startX, startY, endX, endY, start, dur }
+  const rafId        = useRef(null)
+  const drawFrameRef = useRef(null)
+  const pushStateRef = useRef(null)
+
   // Live prop refs so event-handler closures always read current values
   const modeRef   = useRef(mode)
   const diffRef   = useRef(difficulty)
@@ -33,16 +40,19 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
   useImperativeHandle(ref, () => ({
     reset() {
       board.current.clear()
-      current.current  = HUMAN
-      winner.current   = null
-      winLine.current  = null
-      lastMove.current = null
-      busy.current     = false
-      offset.current   = { x: 0, y: 0 }
-      zoom.current     = 1
+      current.current   = HUMAN
+      winner.current    = null
+      winLine.current   = null
+      lastMove.current  = null
+      busy.current      = false
+      offset.current    = { x: 0, y: 0 }
+      zoom.current      = 1
       hoverCell.current = null
-      drawFrame()
-      pushState()
+      pieceAnims.current.clear()
+      panAnim.current   = null
+      if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null }
+      drawFrameRef.current?.()
+      pushStateRef.current?.()
     },
   }))
 
@@ -74,6 +84,38 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
         scores:  { ...scores.current },
       })
     }
+    pushStateRef.current = pushState
+
+    // ── animation helpers ──────────────────────────────────────────────────
+    function springScale(t) {
+      if (t >= 1) return 1
+      if (t < 0.7) return (t / 0.7) * 1.15
+      return 1.15 - ((t - 0.7) / 0.3) * 0.15
+    }
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3) }
+
+    function tick() {
+      const now = performance.now()
+      let more = false
+      if (panAnim.current) {
+        const { startX, startY, endX, endY, start, dur } = panAnim.current
+        const t = Math.min(1, (now - start) / dur)
+        const e = easeOut(t)
+        offset.current.x = startX + (endX - startX) * e
+        offset.current.y = startY + (endY - startY) * e
+        if (t < 1) more = true
+        else { offset.current.x = endX; offset.current.y = endY; panAnim.current = null }
+      }
+      for (const [key, a] of pieceAnims.current) {
+        if (now - a.start < 300) more = true
+        else pieceAnims.current.delete(key)
+      }
+      drawFrame()
+      rafId.current = more ? requestAnimationFrame(tick) : null
+    }
+    function startRaf() {
+      if (!rafId.current) rafId.current = requestAnimationFrame(tick)
+    }
 
     // ── game logic ─────────────────────────────────────────────────────────
     function place(x, y) {
@@ -97,10 +139,17 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       const { W, H } = dims.current
       const margin = cell() * 4
       const { x, y } = g2p(gx, gy)
-      if (x < margin)     offset.current.x += margin - x
-      if (x > W - margin) offset.current.x -= x - (W - margin)
-      if (y < margin)     offset.current.y += margin - y
-      if (y > H - margin) offset.current.y -= y - (H - margin)
+      let dx = 0, dy = 0
+      if (x < margin)     dx = margin - x
+      if (x > W - margin) dx = W - margin - x
+      if (y < margin)     dy = margin - y
+      if (y > H - margin) dy = H - margin - y
+      if (dx === 0 && dy === 0) return
+      panAnim.current = {
+        startX: offset.current.x, startY: offset.current.y,
+        endX:   offset.current.x + dx, endY:   offset.current.y + dy,
+        start:  performance.now(), dur: 320,
+      }
     }
 
     function scheduleBot() {
@@ -112,8 +161,10 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
         const move = computeAIMove(board.current, diffRef.current)
         place(move.x, move.y)
         busy.current = false
+        const key = `${move.x},${move.y}`
+        pieceAnims.current.set(key, { start: performance.now() })
         ensureVisible(move.x, move.y)
-        drawFrame()
+        startRaf()
         pushState()
       }, delay)
     }
@@ -124,7 +175,9 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       if (!pvp && current.current !== HUMAN) return
       const g = p2g(px, py)
       if (place(g.x, g.y)) {
-        drawFrame()
+        const key = `${g.x},${g.y}`
+        pieceAnims.current.set(key, { start: performance.now() })
+        startRaf()
         pushState()
         if (!winner.current && !pvp) scheduleBot()
       }
@@ -141,6 +194,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       drawPieces()
       drawWinLine()
     }
+    drawFrameRef.current = drawFrame
 
     function drawGrid() {
       const { W, H } = dims.current
@@ -182,6 +236,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
     }
 
     function drawPieces() {
+      const now = performance.now()
       for (const [key, p] of board.current) {
         const [gx, gy] = key.split(',').map(Number)
         const { x, y } = g2p(gx, gy)
@@ -189,30 +244,39 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
         const color  = p === HUMAN ? '#58a6ff' : '#f85149'
         const isLast = lastMove.current?.x === gx && lastMove.current?.y === gy
 
+        const anim  = pieceAnims.current.get(key)
+        const scale = anim ? springScale(Math.min(1, (now - anim.start) / 260)) : 1
+
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.scale(scale, scale)
+
         ctx.shadowColor = color
         ctx.shadowBlur  = isLast ? 20 : 7
         ctx.fillStyle   = color
         ctx.beginPath()
-        ctx.arc(x, y, r, 0, Math.PI * 2)
+        ctx.arc(0, 0, r, 0, Math.PI * 2)
         ctx.fill()
         ctx.shadowBlur = 0
 
-        const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.05, x, y, r)
+        const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.05, 0, 0, r)
         g.addColorStop(0, 'rgba(255,255,255,0.38)')
         g.addColorStop(0.4, 'rgba(255,255,255,0.06)')
         g.addColorStop(1, 'rgba(0,0,0,0.25)')
         ctx.fillStyle = g
         ctx.beginPath()
-        ctx.arc(x, y, r, 0, Math.PI * 2)
+        ctx.arc(0, 0, r, 0, Math.PI * 2)
         ctx.fill()
 
         if (isLast) {
           ctx.strokeStyle = 'rgba(255,255,255,0.65)'
           ctx.lineWidth   = 2
           ctx.beginPath()
-          ctx.arc(x, y, r + 3, 0, Math.PI * 2)
+          ctx.arc(0, 0, r + 3, 0, Math.PI * 2)
           ctx.stroke()
         }
+
+        ctx.restore()
       }
     }
 
@@ -397,6 +461,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
 
     return () => {
       ro.disconnect()
+      if (rafId.current) cancelAnimationFrame(rafId.current)
       canvas.removeEventListener('mousedown',  onMouseDown)
       window.removeEventListener('mousemove',  onWindowMouseMove)
       window.removeEventListener('mouseup',    onWindowMouseUp)
