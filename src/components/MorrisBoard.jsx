@@ -248,7 +248,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
       {/* Removable opponent pieces highlight when mustRemove */}
       {mustRemove && [...validTargets].map(n => (
         <circle key={n} cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={20}
-          fill="none" stroke="#f85149" strokeWidth="2" opacity="0.7" />
+          fill="none" stroke={pieceColor(cells[n])} strokeWidth="2" opacity="0.7" />
       ))}
 
       {/* Empty node markers */}
@@ -297,7 +297,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
             />
             <circle cx={cx - 5} cy={cy - 5} r={6} fill="rgba(255,255,255,0.22)" />
             {removable && (
-              <circle cx={cx} cy={cy} r={22} fill="none" stroke="#f85149" strokeWidth="2"
+              <circle cx={cx} cy={cy} r={22} fill="none" stroke={col} strokeWidth="2"
                 strokeDasharray="5 3" />
             )}
           </g>
