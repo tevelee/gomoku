@@ -1,4 +1,5 @@
 import { useRef, useEffect, useImperativeHandle } from 'react'
+import { normalizeGameUiState } from '../game/runtime.js'
 
 export function useGameSync({
   ref, mode, difficulty, onStateChange,
@@ -14,14 +15,14 @@ export function useGameSync({
   useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
 
   useEffect(() => {
-    notifyCb.current({
+    notifyCb.current(normalizeGameUiState({
       current:    gs.current,
       winner:     gs.winner,
       busy:       gs.busy,
       scores:     { ...gs.scores },
       passed:     gs.passed ?? false,
       historyLen: historyRef.current.length,
-    })
+    }))
   }, [gs]) // historyRef and notifyCb are refs — stable, intentionally omitted
 
   useImperativeHandle(ref, () => ({

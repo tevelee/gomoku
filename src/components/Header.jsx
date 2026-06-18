@@ -1,21 +1,25 @@
-export default function Header({ game, onGameChange, statusText, statusClass }) {
+export default function Header({ gameTitle, inLibrary, onLibrary, statusText, statusClass }) {
   return (
     <header className="header">
-      <div className="logo">♟ <span>Games</span></div>
+      <button className="logo logo-button" type="button" onClick={onLibrary}>
+        <span className="logo-mark">♟</span>
+        <span>Games</span>
+      </button>
 
-      <div className="game-tabs">
-        {['gomoku', 'morris', 'othello', 'connect4'].map(g => (
-          <button
-            key={g}
-            className={`tab-btn${game === g ? ' active' : ''}`}
-            onClick={() => onGameChange(g)}
-          >
-            {g === 'gomoku' ? 'Gomoku' : g === 'morris' ? 'Morris' : g === 'othello' ? 'Othello' : '4 in a Row'}
-          </button>
-        ))}
+      <div className="header-center">
+        <button
+          className={`library-btn${inLibrary ? ' active' : ''}`}
+          type="button"
+          onClick={onLibrary}
+        >
+          Library
+        </button>
+        {!inLibrary && <div className="active-game-title">{gameTitle}</div>}
       </div>
 
-      <div className={`status status-${statusClass}`}>{statusText}</div>
+      {inLibrary
+        ? <div className="status status-muted">Choose a game</div>
+        : <div className={`status status-${statusClass}`}>{statusText}</div>}
     </header>
   )
 }
