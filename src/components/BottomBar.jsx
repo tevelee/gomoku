@@ -1,14 +1,68 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
+function useFloatingMenu(open, rootRef) {
+  const [style, setStyle] = useState(null)
+
+  useEffect(() => {
+    if (!open) {
+      setStyle(null)
+      return
+    }
+
+    function updatePosition() {
+      const rect = rootRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const mobile = window.matchMedia('(max-width: 720px)').matches
+
+      if (mobile) {
+        setStyle({
+          position: 'fixed',
+          left: '12px',
+          right: '12px',
+          bottom: 'calc(74px + env(safe-area-inset-bottom))',
+        })
+        return
+      }
+
+      setStyle({
+        position: 'fixed',
+        right: `${Math.max(8, window.innerWidth - rect.right)}px`,
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 6)}px`,
+        minWidth: `${rect.width}px`,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    window.visualViewport?.addEventListener('resize', updatePosition)
+    window.visualViewport?.addEventListener('scroll', updatePosition)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+      window.visualViewport?.removeEventListener('resize', updatePosition)
+      window.visualViewport?.removeEventListener('scroll', updatePosition)
+    }
+  }, [open, rootRef])
+
+  return style
+}
 
 function SelectMenu({ label, value, options, onChange }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const menuRef = useRef(null)
+  const menuStyle = useFloatingMenu(open, rootRef)
   const selected = options.find(option => option.value === value) ?? options[0]
 
   useEffect(() => {
     if (!open) return
     function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
+      const insideTrigger = rootRef.current?.contains(event.target)
+      const insideMenu = menuRef.current?.contains(event.target)
+      if (!insideTrigger && !insideMenu) setOpen(false)
     }
     function handleKeyDown(event) {
       if (event.key === 'Escape') setOpen(false)
@@ -35,8 +89,8 @@ function SelectMenu({ label, value, options, onChange }) {
         <span className="select-chevron" aria-hidden="true" />
       </button>
 
-      {open && (
-        <div className="select-menu" role="listbox" aria-label={label}>
+      {open && menuStyle && createPortal(
+        <div ref={menuRef} className="select-menu" role="listbox" aria-label={label} style={menuStyle}>
           {options.map(option => (
             <button
               key={option.value}
@@ -52,7 +106,8 @@ function SelectMenu({ label, value, options, onChange }) {
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
@@ -61,11 +116,15 @@ function SelectMenu({ label, value, options, onChange }) {
 function ActionMenu({ onUndo }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const menuRef = useRef(null)
+  const menuStyle = useFloatingMenu(open, rootRef)
 
   useEffect(() => {
     if (!open) return
     function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
+      const insideTrigger = rootRef.current?.contains(event.target)
+      const insideMenu = menuRef.current?.contains(event.target)
+      if (!insideTrigger && !insideMenu) setOpen(false)
     }
     function handleKeyDown(event) {
       if (event.key === 'Escape') setOpen(false)
@@ -91,8 +150,8 @@ function ActionMenu({ onUndo }) {
         <span aria-hidden="true">...</span>
       </button>
 
-      {open && (
-        <div className="action-menu" role="menu" aria-label="More actions">
+      {open && menuStyle && createPortal(
+        <div ref={menuRef} className="action-menu" role="menu" aria-label="More actions" style={menuStyle}>
           <button
             className="action-option"
             type="button"
@@ -104,7 +163,8 @@ function ActionMenu({ onUndo }) {
           >
             Undo move
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

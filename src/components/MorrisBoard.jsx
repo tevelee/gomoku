@@ -22,6 +22,8 @@ function makeInitialState() {
     scores:     { p1: 0, p2: 0 },
     lastNode:   -1,
     movingFrom: -1,
+    removedPiece: null,
+    animationId: 0,
   }
 }
 
@@ -98,7 +100,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     if (mill && getRemovable(newCells, current).length > 0) {
       return {
         ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
-        mustRemove: true, lastNode: placedAt, movingFrom, busy: false,
+        mustRemove: true, lastNode: placedAt, movingFrom, busy: false, removedPiece: null,
       }
     }
 
@@ -107,7 +109,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
       return {
         ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
         winner: current, winMill: findWinMill(newCells, current), lastNode: placedAt,
-        movingFrom, busy: false, selected: -1,
+        movingFrom, busy: false, selected: -1, removedPiece: null,
         scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
       }
     }
@@ -115,7 +117,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     const needsAI = !pvp && opp === P2
     return {
       ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
-      current: opp, selected: -1, lastNode: placedAt, movingFrom, busy: needsAI, mustRemove: false,
+      current: opp, selected: -1, lastNode: placedAt, movingFrom, busy: needsAI, mustRemove: false, removedPiece: null,
     }
   }
 
@@ -128,7 +130,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         return {
           ...s,
           winner: current, winMill: findWinMill(cells, current),
-          mustRemove: false, busy: false, selected: -1, movingFrom: -1,
+          mustRemove: false, busy: false, selected: -1, movingFrom: -1, removedPiece: null,
           scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
         }
       }
@@ -136,7 +138,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
       const needsAI = !pvp && opp === P2
       return {
         ...s,
-        current: opp, mustRemove: false, busy: needsAI, selected: -1, movingFrom: -1,
+        current: opp, mustRemove: false, busy: needsAI, selected: -1, movingFrom: -1, removedPiece: null,
       }
     }
 
@@ -144,12 +146,15 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     newCells[nodeIdx] = 0
     const newOnBoard  = [...onBoard]
     newOnBoard[opp]--
+    const animationId = (s.animationId ?? 0) + 1
+    const removedPiece = { node: nodeIdx, player: opp, id: animationId }
 
     if (checkWin(newCells, inHand, newOnBoard, current)) {
       return {
         ...s, cells: newCells, onBoard: newOnBoard,
         winner: current, winMill: findWinMill(newCells, current),
         mustRemove: false, busy: false, lastNode: nodeIdx, movingFrom: -1,
+        removedPiece, animationId,
         scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
       }
     }
@@ -158,6 +163,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     return {
       ...s, cells: newCells, onBoard: newOnBoard,
       current: opp, mustRemove: false, busy: needsAI, lastNode: nodeIdx, movingFrom: -1,
+      removedPiece, animationId,
     }
   }
 
@@ -209,7 +215,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
 
   // ── Derived rendering data ──────────────────────────────────────────────────
 
-  const { cells, inHand, onBoard, current, selected, mustRemove, winner, busy, lastNode, movingFrom, winMill } = gs
+  const { cells, inHand, onBoard, current, selected, mustRemove, winner, busy, lastNode, movingFrom, winMill, removedPiece } = gs
   const pvp    = mode === 'pvp'
   const flying = !winner && !mustRemove && inHand[current] === 0 && onBoard[current] === 3
 
@@ -285,6 +291,21 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         <circle key={lastNode} className="morris-ripple"
           cx={NODE_POS[lastNode][0]} cy={NODE_POS[lastNode][1]}
           r={20} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" />
+      )}
+
+      {/* Captured piece fade-out */}
+      {removedPiece && (
+        <g
+          key={`removed-${removedPiece.id}`}
+          className="morris-removed-piece"
+          transform={`translate(${NODE_POS[removedPiece.node][0]} ${NODE_POS[removedPiece.node][1]})`}
+        >
+          <circle r={18}
+            fill={pieceColor(removedPiece.player)}
+            style={{ filter: `drop-shadow(0 0 8px ${pieceColor(removedPiece.player)}aa)` }}
+          />
+          <circle cx="-5" cy="-5" r={6} fill="rgba(255,255,255,0.22)" />
+        </g>
       )}
 
       {/* Pieces */}

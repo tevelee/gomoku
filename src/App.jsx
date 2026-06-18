@@ -22,6 +22,17 @@ const CONFETTI = [
   ['91%', '#58a6ff', '-116px', '66deg', '120ms'],
 ]
 
+const LOSS_PARTICLES = [
+  ['13%', '0ms', '24px'],
+  ['22%', '70ms', '38px'],
+  ['31%', '130ms', '30px'],
+  ['44%', '30ms', '44px'],
+  ['56%', '100ms', '34px'],
+  ['68%', '20ms', '46px'],
+  ['79%', '150ms', '28px'],
+  ['88%', '80ms', '40px'],
+]
+
 export default function App() {
   useVisualViewportHeight()
 
@@ -182,20 +193,38 @@ function GameOverOverlay({ copy, scores, scoreLabels, mode, onNewGame, onReview,
 
   return (
     <div className="game-over-layer" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
-      <div className="game-over-confetti" aria-hidden="true">
-        {CONFETTI.map(([left, color, rise, rotate, delay], index) => (
-          <span
-            key={index}
-            style={{
-              left,
-              background: color,
-              '--confetti-rise': rise,
-              '--confetti-rotate': rotate,
-              animationDelay: delay,
-            }}
-          />
-        ))}
-      </div>
+      {copy.tone === 'win' && (
+        <div className="game-over-confetti" aria-hidden="true">
+          {CONFETTI.map(([left, color, rise, rotate, delay], index) => (
+            <span
+              key={index}
+              style={{
+                left,
+                background: color,
+                '--confetti-rise': rise,
+                '--confetti-rotate': rotate,
+                animationDelay: delay,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {copy.tone === 'lose' && (
+        <div className="game-over-loss-effect" aria-hidden="true">
+          <i />
+          {LOSS_PARTICLES.map(([left, delay, drift], index) => (
+            <span
+              key={index}
+              style={{
+                left,
+                '--loss-drift': drift,
+                animationDelay: delay,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className={`game-over-card result-${copy.tone}`}>
         <div className="game-over-kicker">{copy.kicker}</div>

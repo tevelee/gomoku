@@ -16,6 +16,7 @@ function makeInitialState() {
     busy:     false,
     scores:   { p1: 0, p2: 0 },
     lastMove: -1,
+    flipped:  [],
   }
 }
 
@@ -40,8 +41,8 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
         if (!s.busy) return s
         const move = computeOthelloMove(s.board, s.current, diffRef.current)
         if (move == null) return applyPass(s, modeRef.current === 'pvp')
-        const { board: nb } = applyMove(s.board, move, s.current)
-        return afterMove(s, nb, move, modeRef.current === 'pvp')
+        const { board: nb, flips } = applyMove(s.board, move, s.current)
+        return afterMove(s, nb, move, modeRef.current === 'pvp', flips)
       })
     }, delay)
     return () => clearTimeout(timer)
@@ -49,7 +50,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
 
   // ── State helpers ───────────────────────────────────────────────────────────
 
-  function afterMove(s, newBoard, movedIdx, pvp) {
+  function afterMove(s, newBoard, movedIdx, pvp, flips = []) {
     const { current, scores } = s
     const opp      = current === P1 ? P2 : P1
     const oppMoves = getValidMoves(newBoard, opp)
@@ -60,17 +61,17 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
       const newScores = { ...scores }
       if (winner === P1) newScores.p1++
       else if (winner === P2) newScores.p2++
-      return { ...s, board: newBoard, winner, scores: newScores, lastMove: movedIdx, passed: false, busy: false }
+      return { ...s, board: newBoard, winner, scores: newScores, lastMove: movedIdx, flipped: flips, passed: false, busy: false }
     }
 
     if (oppMoves.length === 0) {
       // Opponent passes — current player goes again
       const needsAI = !pvp && current === P2
-      return { ...s, board: newBoard, lastMove: movedIdx, passed: true, busy: needsAI }
+      return { ...s, board: newBoard, lastMove: movedIdx, flipped: flips, passed: true, busy: needsAI }
     }
 
     const needsAI = !pvp && opp === P2
-    return { ...s, board: newBoard, lastMove: movedIdx, passed: false, current: opp, busy: needsAI }
+    return { ...s, board: newBoard, lastMove: movedIdx, flipped: flips, passed: false, current: opp, busy: needsAI }
   }
 
   function applyPass(s, pvp) {
@@ -82,10 +83,10 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
       const newScores = { ...scores }
       if (winner === P1) newScores.p1++
       else if (winner === P2) newScores.p2++
-      return { ...s, winner, scores: newScores, passed: false, busy: false }
+      return { ...s, winner, scores: newScores, passed: false, busy: false, flipped: [] }
     }
     const needsAI = !pvp && opp === P2
-    return { ...s, current: opp, passed: true, busy: needsAI }
+    return { ...s, current: opp, passed: true, busy: needsAI, flipped: [] }
   }
 
   // ── Click handler ───────────────────────────────────────────────────────────
@@ -101,20 +102,21 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
 
     historyRef.current.push(gs)
     setGs(s => {
-      const { board: nb } = applyMove(s.board, cellIdx, s.current)
-      return afterMove(s, nb, cellIdx, modeRef.current === 'pvp')
+      const { board: nb, flips } = applyMove(s.board, cellIdx, s.current)
+      return afterMove(s, nb, cellIdx, modeRef.current === 'pvp', flips)
     })
   }
 
   // ── Derived data for render ─────────────────────────────────────────────────
 
-  const { board, current, winner, busy, lastMove } = gs
+  const { board, current, winner, busy, lastMove, flipped } = gs
   const pvp        = mode === 'pvp'
   const validMoves = (!winner && !busy && (pvp || current === P1))
     ? new Set(getValidMoves(board, current))
     : new Set()
 
   const curColor = current === P1 ? P1_COLOR : P2_COLOR
+  const flippedSet = new Set(flipped)
 
   const { p1: p1count, p2: p2count } = countPieces(board)
 
@@ -164,8 +166,9 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
         const { x, y } = cellCenter(Math.floor(i/8), i%8)
         const color  = cell === P1 ? P1_COLOR : P2_COLOR
         const isLast = i === lastMove
+        const isFlipped = flippedSet.has(i)
         return (
-          <g key={`${i}-${cell}`} className="othello-piece-g">
+          <g key={`${i}-${cell}-${isFlipped ? lastMove : 'stable'}`} className={isFlipped ? 'othello-flip-piece' : 'othello-piece-g'}>
             {isLast && <circle cx={x} cy={y} r={26} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />}
             <circle cx={x} cy={y} r={22}
               fill={color}

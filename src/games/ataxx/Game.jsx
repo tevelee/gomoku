@@ -263,10 +263,15 @@ const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, on
                 : 'ataxx-piece',
           isCloneSource ? 'ataxx-clone-source' : '',
         ].filter(Boolean).join(' ')
-        const moveStyle = isJumpTarget
+        const moveOrigin = isJumpTarget || isCloneTarget
+          ? lastMove.from
+          : isConverted
+            ? lastMove?.to
+            : null
+        const moveStyle = Number.isInteger(moveOrigin)
           ? {
-              '--ataxx-move-dx': `${cellCenter(lastMove.from).x - x}px`,
-              '--ataxx-move-dy': `${cellCenter(lastMove.from).y - y}px`,
+              '--ataxx-move-dx': `${cellCenter(moveOrigin).x - x}px`,
+              '--ataxx-move-dy': `${cellCenter(moveOrigin).y - y}px`,
             }
           : {}
         return (
