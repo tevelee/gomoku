@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
+import { useState, useRef, useEffect, forwardRef } from 'react'
 import {
   P1, P2,
   NODE_POS, EDGES, ADJACENCY, MILLS,
   detectMill, getRemovable, getValidPlacements, getValidMoveActions, checkWin,
 } from '../game/morris/logic.js'
 import { computeMorrisMove } from '../game/morris/ai.js'
+import { useGameSync } from '../hooks/useGameSync.js'
+import { P1_COLOR, P2_COLOR } from '../game/colors.js'
 
 function makeInitialState() {
   return {
@@ -31,30 +33,10 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
-  const modeRef    = useRef(mode)
-  const diffRef    = useRef(difficulty)
-  const notifyCb   = useRef(onStateChange)
-  useEffect(() => { modeRef.current = mode },         [mode])
-  useEffect(() => { diffRef.current = difficulty },   [difficulty])
-  useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
-
-  useEffect(() => {
-    notifyCb.current({
-      current:    gs.current,
-      winner:     gs.winner,
-      busy:       gs.busy,
-      scores:     { ...gs.scores },
-      historyLen: historyRef.current.length,
-    })
-  }, [gs])
-
-  useImperativeHandle(ref, () => ({
-    reset() { historyRef.current = []; setGs(makeInitialState()) },
-    undo()  {
-      const prev = historyRef.current.pop()
-      if (prev) setGs(prev)
-    },
-  }))
+  const { modeRef, diffRef } = useGameSync({
+    ref, mode, difficulty, onStateChange,
+    gs, setGs, historyRef, makeInitial: makeInitialState,
+  })
 
   // ── AI trigger ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -225,11 +207,8 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     }
   }
 
-  const p1Color = '#58a6ff'
-  const p2Color = '#f85149'
-
-  function pieceColor(p) { return p === P1 ? p1Color : p2Color }
-  function currentColor() { return current === P1 ? p1Color : p2Color }
+  function pieceColor(p) { return p === P1 ? P1_COLOR : P2_COLOR }
+  function currentColor() { return current === P1 ? P1_COLOR : P2_COLOR }
 
   return (
     <svg
@@ -339,11 +318,11 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
       {/* Piece count / phase info panel */}
       <g fontSize="12" fontFamily="-apple-system, sans-serif">
         {/* P1 hand count */}
-        <text x="20" y="468" fill={p1Color} textAnchor="start">
+        <text x="20" y="468" fill={P1_COLOR} textAnchor="start">
           {`● ${inHand[P1]} in hand`}
         </text>
         {/* P2 hand count */}
-        <text x="460" y="468" fill={p2Color} textAnchor="end">
+        <text x="460" y="468" fill={P2_COLOR} textAnchor="end">
           {`${inHand[P2]} in hand ●`}
         </text>
       </g>

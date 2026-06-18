@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
+import { useState, useRef, useEffect, forwardRef } from 'react'
 import { ROWS, COLS, P1, P2, makeBoard, dropPiece, getValidCols, checkWinAt, getWinLine, isBoardFull } from '../game/connect4/logic.js'
 import { computeConnect4Move } from '../game/connect4/ai.js'
+import { useGameSync } from '../hooks/useGameSync.js'
+import { P1_COLOR, P2_COLOR } from '../game/colors.js'
 
 const CELL = 60, R = 24
 const W = COLS * CELL          // 420
@@ -39,31 +41,11 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
   const [hoverCol, setHoverCol] = useState(-1)
 
   const historyRef = useRef([])
-  const modeRef    = useRef(mode)
-  const diffRef    = useRef(difficulty)
-  const notifyCb   = useRef(onStateChange)
-  useEffect(() => { modeRef.current = mode },           [mode])
-  useEffect(() => { diffRef.current = difficulty },     [difficulty])
-  useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
-
-  useEffect(() => {
-    notifyCb.current({
-      current:    gs.current,
-      winner:     gs.winner,
-      busy:       gs.busy,
-      scores:     { ...gs.scores },
-      passed:     false,
-      historyLen: historyRef.current.length,
-    })
-  }, [gs])
-
-  useImperativeHandle(ref, () => ({
-    reset() { historyRef.current = []; setGs(makeInitialState()); setHoverCol(-1) },
-    undo()  {
-      const prev = historyRef.current.pop()
-      if (prev) setGs(prev)
-    },
-  }))
+  const { modeRef, diffRef } = useGameSync({
+    ref, mode, difficulty, onStateChange,
+    gs, setGs, historyRef, makeInitial: makeInitialState,
+    onExtraReset: () => setHoverCol(-1),
+  })
 
   useEffect(() => {
     if (!gs.busy) return
@@ -105,7 +87,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
     const pvp = modeRef.current === 'pvp'
     if (winner || busy) return
     if (!pvp && current === P2) return
-    if (!board[0][col] === false) return  // col full check done inside applyDrop
+    if (board[0][col] !== 0) return
     historyRef.current.push(gs)
     setGs(s => applyDrop(s, col))
   }
@@ -114,9 +96,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
   const pvp       = mode === 'pvp'
   const validCols = new Set(!winner && !busy && (pvp || current === P1) ? getValidCols(board) : [])
   const winSet    = winLine ? new Set(winLine.map(([r, c]) => r * COLS + c)) : null
-  const p1Color   = '#58a6ff'
-  const p2Color   = '#f85149'
-  const curColor  = current === P1 ? p1Color : p2Color
+  const curColor  = current === P1 ? P1_COLOR : P2_COLOR
 
   return (
     <svg
@@ -143,7 +123,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
       {/* Pieces (behind board overlay so they appear through holes) */}
       {board.map((row, r) => row.map((cell, c) => {
         if (!cell) return null
-        const color  = cell === P1 ? p1Color : p2Color
+        const color  = cell === P1 ? P1_COLOR : P2_COLOR
         const isWin  = winSet?.has(r * COLS + c)
         const isLast = lastMove?.row === r && lastMove?.col === c
         return (

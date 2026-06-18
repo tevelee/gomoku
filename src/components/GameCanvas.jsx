@@ -1,6 +1,7 @@
 import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { HUMAN, BOT, detectWin } from '../game/gomoku/logic.js'
 import { computeAIMove } from '../game/gomoku/ai.js'
+import { P1_COLOR, P2_COLOR } from '../game/colors.js'
 
 const BASE_CELL = 44
 
@@ -277,7 +278,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
         const [gx, gy] = key.split(',').map(Number)
         const { x, y } = g2p(gx, gy)
         const r      = cell() / 2 - 5
-        const color  = p === HUMAN ? '#58a6ff' : '#f85149'
+        const color  = p === HUMAN ? P1_COLOR : P2_COLOR
         const isLast = lastMove.current?.x === gx && lastMove.current?.y === gy
 
         const anim  = pieceAnims.current.get(key)

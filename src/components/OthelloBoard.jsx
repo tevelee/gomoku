@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
+import { useState, useRef, useEffect, forwardRef } from 'react'
 import {
   P1, P2,
   makeBoard, getFlips, getValidMoves, applyMove, countPieces, getWinner, pos,
 } from '../game/othello/logic.js'
 import { computeOthelloMove } from '../game/othello/ai.js'
+import { useGameSync } from '../hooks/useGameSync.js'
+import { P1_COLOR, P2_COLOR } from '../game/colors.js'
 
 function makeInitialState() {
   return {
@@ -24,31 +26,10 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
-  const modeRef    = useRef(mode)
-  const diffRef    = useRef(difficulty)
-  const notifyCb   = useRef(onStateChange)
-  useEffect(() => { modeRef.current = mode },           [mode])
-  useEffect(() => { diffRef.current = difficulty },     [difficulty])
-  useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
-
-  useEffect(() => {
-    notifyCb.current({
-      current:    gs.current,
-      winner:     gs.winner,
-      busy:       gs.busy,
-      scores:     { ...gs.scores },
-      passed:     gs.passed,
-      historyLen: historyRef.current.length,
-    })
-  }, [gs])
-
-  useImperativeHandle(ref, () => ({
-    reset() { historyRef.current = []; setGs(makeInitialState()) },
-    undo()  {
-      const prev = historyRef.current.pop()
-      if (prev) setGs(prev)
-    },
-  }))
+  const { modeRef, diffRef } = useGameSync({
+    ref, mode, difficulty, onStateChange,
+    gs, setGs, historyRef, makeInitial: makeInitialState,
+  })
 
   // ── AI trigger ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,9 +114,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
     ? new Set(getValidMoves(board, current))
     : new Set()
 
-  const p1Color = '#58a6ff'
-  const p2Color = '#f85149'
-  const curColor = current === P1 ? p1Color : p2Color
+  const curColor = current === P1 ? P1_COLOR : P2_COLOR
 
   const { p1: p1count, p2: p2count } = countPieces(board)
 
@@ -183,7 +162,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
       {board.map((cell, i) => {
         if (!cell) return null
         const { x, y } = cellCenter(Math.floor(i/8), i%8)
-        const color  = cell === P1 ? p1Color : p2Color
+        const color  = cell === P1 ? P1_COLOR : P2_COLOR
         const isLast = i === lastMove
         return (
           <g key={`${i}-${cell}`} className="othello-piece-g">
@@ -212,11 +191,11 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
 
       {/* Piece count bar */}
       <rect x={0} y={448} width={448} height={32} fill="#0d1117" />
-      <circle cx={20} cy={464} r={8} fill={p1Color} />
-      <text x={34} y={469} fill={p1Color} fontSize="13" fontFamily="-apple-system,sans-serif"
+      <circle cx={20} cy={464} r={8} fill={P1_COLOR} />
+      <text x={34} y={469} fill={P1_COLOR} fontSize="13" fontFamily="-apple-system,sans-serif"
         fontWeight="600">{p1count}</text>
-      <circle cx={428} cy={464} r={8} fill={p2Color} />
-      <text x={414} y={469} fill={p2Color} fontSize="13" fontFamily="-apple-system,sans-serif"
+      <circle cx={428} cy={464} r={8} fill={P2_COLOR} />
+      <text x={414} y={469} fill={P2_COLOR} fontSize="13" fontFamily="-apple-system,sans-serif"
         fontWeight="600" textAnchor="end">{p2count}</text>
       <text x={224} y={469} fill="#8b949e" fontSize="11" fontFamily="-apple-system,sans-serif"
         textAnchor="middle">{winner ? (winner === 'draw' ? 'Draw' : '') : `${64 - p1count - p2count} left`}</text>
