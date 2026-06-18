@@ -29,6 +29,11 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
   const drawFrameRef = useRef(null)
   const pushStateRef = useRef(null)
 
+  // Undo state
+  const historyRef  = useRef([])
+  const botTimerRef = useRef(null)
+  const undoRef     = useRef(null)
+
   // Live prop refs so event-handler closures always read current values
   const modeRef   = useRef(mode)
   const diffRef   = useRef(difficulty)
@@ -39,6 +44,8 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
 
   useImperativeHandle(ref, () => ({
     reset() {
+      historyRef.current = []
+      if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
       board.current.clear()
       current.current   = HUMAN
       winner.current    = null
@@ -54,6 +61,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       drawFrameRef.current?.()
       pushStateRef.current?.()
     },
+    undo() { undoRef.current?.() },
   }))
 
   useEffect(() => {
@@ -78,13 +86,32 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
 
     function pushState() {
       notifyCb.current({
-        current: current.current,
-        winner:  winner.current,
-        busy:    busy.current,
-        scores:  { ...scores.current },
+        current:    current.current,
+        winner:     winner.current,
+        busy:       busy.current,
+        scores:     { ...scores.current },
+        historyLen: historyRef.current.length,
       })
     }
     pushStateRef.current = pushState
+
+    function undo() {
+      if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
+      const prev = historyRef.current.pop()
+      if (!prev) return
+      board.current    = prev.board
+      current.current  = prev.current
+      winner.current   = prev.winner
+      winLine.current  = prev.winLine
+      lastMove.current = prev.lastMove
+      busy.current     = false
+      pieceAnims.current.clear()
+      panAnim.current  = null
+      if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null }
+      drawFrame()
+      pushState()
+    }
+    undoRef.current = undo
 
     // ── animation helpers ──────────────────────────────────────────────────
     function springScale(t) {
@@ -157,7 +184,8 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       pushState()
       drawFrame()
       const delay = diffRef.current === 'expert' ? 80 : 30
-      setTimeout(() => {
+      botTimerRef.current = setTimeout(() => {
+        botTimerRef.current = null
         const move = computeAIMove(board.current, diffRef.current)
         place(move.x, move.y)
         busy.current = false
@@ -174,8 +202,16 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
       if (busy.current || winner.current) return
       if (!pvp && current.current !== HUMAN) return
       const g = p2g(px, py)
+      const key = `${g.x},${g.y}`
+      if (board.current.has(key)) return
+      historyRef.current.push({
+        board:    new Map(board.current),
+        current:  current.current,
+        winner:   winner.current,
+        winLine:  winLine.current,
+        lastMove: lastMove.current,
+      })
       if (place(g.x, g.y)) {
-        const key = `${g.x},${g.y}`
         pieceAnims.current.set(key, { start: performance.now() })
         startRaf()
         pushState()
@@ -461,6 +497,7 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
 
     return () => {
       ro.disconnect()
+      if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
       if (rafId.current) cancelAnimationFrame(rafId.current)
       canvas.removeEventListener('mousedown',  onMouseDown)
       window.removeEventListener('mousemove',  onWindowMouseMove)

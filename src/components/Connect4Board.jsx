@@ -38,25 +38,31 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
   const [gs, setGs] = useState(makeInitialState)
   const [hoverCol, setHoverCol] = useState(-1)
 
-  const modeRef  = useRef(mode)
-  const diffRef  = useRef(difficulty)
-  const notifyCb = useRef(onStateChange)
+  const historyRef = useRef([])
+  const modeRef    = useRef(mode)
+  const diffRef    = useRef(difficulty)
+  const notifyCb   = useRef(onStateChange)
   useEffect(() => { modeRef.current = mode },           [mode])
   useEffect(() => { diffRef.current = difficulty },     [difficulty])
   useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
 
   useEffect(() => {
     notifyCb.current({
-      current: gs.current,
-      winner:  gs.winner,
-      busy:    gs.busy,
-      scores:  { ...gs.scores },
-      passed:  false,
+      current:    gs.current,
+      winner:     gs.winner,
+      busy:       gs.busy,
+      scores:     { ...gs.scores },
+      passed:     false,
+      historyLen: historyRef.current.length,
     })
   }, [gs])
 
   useImperativeHandle(ref, () => ({
-    reset() { setGs(makeInitialState()); setHoverCol(-1) },
+    reset() { historyRef.current = []; setGs(makeInitialState()); setHoverCol(-1) },
+    undo()  {
+      const prev = historyRef.current.pop()
+      if (prev) setGs(prev)
+    },
   }))
 
   useEffect(() => {
@@ -100,6 +106,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
     if (winner || busy) return
     if (!pvp && current === P2) return
     if (!board[0][col] === false) return  // col full check done inside applyDrop
+    historyRef.current.push(gs)
     setGs(s => applyDrop(s, col))
   }
 

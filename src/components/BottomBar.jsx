@@ -1,6 +1,7 @@
 export default function BottomBar({
   mode, difficulty, scores,
   onModeChange, onDifficultyChange, onNewGame,
+  showUndo, canUndo, onUndo,
 }) {
   const pvp = mode === 'pvp'
 
@@ -39,6 +40,9 @@ export default function BottomBar({
           </div>
         )}
 
+        {showUndo && (
+          <button className="btn-undo" onClick={onUndo} disabled={!canUndo}>↩ Undo</button>
+        )}
         <button className="btn-new" onClick={onNewGame}>New Game</button>
       </div>
     </div>

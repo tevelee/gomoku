@@ -23,25 +23,31 @@ const STARS = [18, 21, 42, 45]
 const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
-  const modeRef   = useRef(mode)
-  const diffRef   = useRef(difficulty)
-  const notifyCb  = useRef(onStateChange)
+  const historyRef = useRef([])
+  const modeRef    = useRef(mode)
+  const diffRef    = useRef(difficulty)
+  const notifyCb   = useRef(onStateChange)
   useEffect(() => { modeRef.current = mode },           [mode])
   useEffect(() => { diffRef.current = difficulty },     [difficulty])
   useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
 
   useEffect(() => {
     notifyCb.current({
-      current: gs.current,
-      winner:  gs.winner,
-      busy:    gs.busy,
-      scores:  { ...gs.scores },
-      passed:  gs.passed,
+      current:    gs.current,
+      winner:     gs.winner,
+      busy:       gs.busy,
+      scores:     { ...gs.scores },
+      passed:     gs.passed,
+      historyLen: historyRef.current.length,
     })
   }, [gs])
 
   useImperativeHandle(ref, () => ({
-    reset() { setGs(makeInitialState()) },
+    reset() { historyRef.current = []; setGs(makeInitialState()) },
+    undo()  {
+      const prev = historyRef.current.pop()
+      if (prev) setGs(prev)
+    },
   }))
 
   // ── AI trigger ──────────────────────────────────────────────────────────────
@@ -112,6 +118,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
     const { row, col } = pos(cellIdx)
     if (getFlips(board, row, col, current).length === 0) return
 
+    historyRef.current.push(gs)
     setGs(s => {
       const { board: nb } = applyMove(s.board, cellIdx, s.current)
       return afterMove(s, nb, cellIdx, modeRef.current === 'pvp')

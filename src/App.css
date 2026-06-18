@@ -241,6 +241,23 @@ select:focus { border-color: var(--p1); }
 .btn-new:hover  { background: #2ea043; border-color: #3fb950; }
 .btn-new:active { transform: scale(0.97); }
 
+.btn-undo {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 14px;
+  height: 38px;
+  font-size: 0.83rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  outline: none;
+}
+.btn-undo:hover:not(:disabled)  { color: var(--text); border-color: #6e7681; }
+.btn-undo:active:not(:disabled) { transform: scale(0.97); }
+.btn-undo:disabled { opacity: 0.35; cursor: default; }
+
 /* ── Morris animations ───────────────────────────────────────────────────── */
 @keyframes piece-pop {
   0%   { transform: scale(0); opacity: 0; }

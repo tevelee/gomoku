@@ -30,6 +30,7 @@ function findWinMill(cells, player) {
 const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
+  const historyRef = useRef([])
   const modeRef    = useRef(mode)
   const diffRef    = useRef(difficulty)
   const notifyCb   = useRef(onStateChange)
@@ -39,15 +40,20 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
 
   useEffect(() => {
     notifyCb.current({
-      current: gs.current,
-      winner:  gs.winner,
-      busy:    gs.busy,
-      scores:  { ...gs.scores },
+      current:    gs.current,
+      winner:     gs.winner,
+      busy:       gs.busy,
+      scores:     { ...gs.scores },
+      historyLen: historyRef.current.length,
     })
   }, [gs])
 
   useImperativeHandle(ref, () => ({
-    reset() { setGs(makeInitialState()) },
+    reset() { historyRef.current = []; setGs(makeInitialState()) },
+    undo()  {
+      const prev = historyRef.current.pop()
+      if (prev) setGs(prev)
+    },
   }))
 
   // ── AI trigger ──────────────────────────────────────────────────────────────
@@ -175,6 +181,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     // Placing
     if (inHand[current] > 0) {
       if (cells[idx] !== 0) return
+      historyRef.current.push(gs)
       setGs(s => applyPlaceOrMove(s, { type: 'place', to: idx }))
       return
     }
@@ -192,6 +199,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     } else if (cells[idx] === 0) {
       const validMove = flying || ADJACENCY[selected].includes(idx)
       if (!validMove) { setGs(s => ({ ...s, selected: -1 })); return }
+      historyRef.current.push(gs)
       setGs(s => applyPlaceOrMove(s, { type: 'move', from: selected, to: idx }))
     }
   }
