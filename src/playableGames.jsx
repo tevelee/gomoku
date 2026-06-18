@@ -8,6 +8,7 @@ import CheckersGame from './games/checkers/Game.jsx'
 import DotsBoxesGame from './games/dots-boxes/Game.jsx'
 import SudokuGame from './games/sudoku/Game.jsx'
 import BackgammonGame from './games/backgammon/Game.jsx'
+import NonogramGame from './games/nonogram/Game.jsx'
 import { gamesById } from './gameRegistry.js'
 
 export const playableGames = [
@@ -73,6 +74,26 @@ export const playableGames = [
     Component: BackgammonGame,
     hint: 'Roll dice · Tap a checker, entry, or bear-off tray',
     scoreLabels: ['P1', 'P2'],
+  },
+  {
+    ...gamesById.nonogram,
+    Component: NonogramGame,
+    hint: 'Fill clue runs · Mark blanks · Right-click marks',
+    scoreLabels: ['Filled', 'Mistakes'],
+    options: [
+      {
+        id: 'boardSize',
+        label: 'Board size',
+        defaultValue: '10',
+        options: [
+          { value: '8', label: '8x8' },
+          { value: '10', label: '10x10' },
+          { value: '12', label: '12x12' },
+          { value: '15', label: '15x15' },
+          { value: '20', label: '20x20' },
+        ],
+      },
+    ],
   },
   {
     ...gamesById.sudoku,

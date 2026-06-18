@@ -149,11 +149,11 @@ export const games = [
     id: 'nonogram',
     title: 'Nonogram',
     category: 'Puzzle',
-    status: 'planned',
+    status: 'playable',
     modes: ['solo'],
     tags: ['puzzle', 'grid', 'solo'],
     complexity: 'Medium',
-    duration: '5-30 min',
+    duration: '5-25 min',
     visual: 'nonogram',
   },
   {

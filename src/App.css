@@ -1162,6 +1162,276 @@ body {
   text-align: center;
 }
 
+/* ── Nonogram ───────────────────────────────────────────────────────────── */
+.nonogram-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(227,179,65,0.08), rgba(13,17,23,0) 210px),
+    var(--bg);
+  outline: none;
+}
+
+.nonogram-shell {
+  display: grid;
+  grid-template-columns: auto 208px;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.nonogram-frame {
+  display: grid;
+  grid-template-columns: var(--nonogram-clue-size) minmax(0, 1fr);
+  grid-template-rows: var(--nonogram-clue-size) minmax(0, 1fr);
+  width: min(80vh, 760px, calc(100vw - 286px));
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #30363d;
+  border: 3px solid #6e7681;
+  border-radius: var(--radius);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+}
+
+.nonogram-frame.size-15,
+.nonogram-frame.size-20 {
+  font-size: 0.84rem;
+}
+
+.nonogram-corner,
+.nonogram-top-clue,
+.nonogram-left-clue {
+  min-width: 0;
+  min-height: 0;
+  color: #c9d1d9;
+  background: #18212b;
+  border-right: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.nonogram-corner {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.nonogram-top-clues,
+.nonogram-left-clues,
+.nonogram-grid {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
+.nonogram-top-clues {
+  grid-template-columns: repeat(var(--nonogram-size), minmax(0, 1fr));
+}
+
+.nonogram-left-clues {
+  grid-template-rows: repeat(var(--nonogram-size), minmax(0, 1fr));
+}
+
+.nonogram-top-clue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 4px 1px;
+  font-size: 0.72em;
+}
+
+.nonogram-left-clue {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 0.78em;
+}
+
+.nonogram-top-clue.active,
+.nonogram-left-clue.active {
+  color: #ffffff;
+  background: #203247;
+}
+
+.nonogram-top-clue.complete,
+.nonogram-left-clue.complete {
+  color: var(--win);
+}
+
+.nonogram-grid {
+  grid-template-columns: repeat(var(--nonogram-size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--nonogram-size), minmax(0, 1fr));
+  background: #30363d;
+}
+
+.nonogram-cell {
+  display: grid;
+  place-items: center;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  color: #e3b341;
+  background: #101820;
+  border: 0;
+  border-right: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+  border-radius: 0;
+  font: inherit;
+  font-size: clamp(0.56rem, 1.8vh, 0.92rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s, transform 0.08s;
+}
+
+.nonogram-cell.active-line:not(.filled):not(.marked) {
+  background: #152232;
+}
+
+.nonogram-cell.filled {
+  background: #d8e1ea;
+  box-shadow: inset 0 -2px 0 rgba(139,148,158,0.75);
+}
+
+.nonogram-cell.marked {
+  color: #e3b341;
+  background: #141d25;
+}
+
+.nonogram-cell.wrong {
+  background: #f85149;
+  box-shadow: inset 0 0 0 2px #ffd1cc;
+}
+
+.nonogram-cell.selected {
+  z-index: 2;
+  box-shadow: inset 0 0 0 3px var(--p1);
+}
+
+.nonogram-cell:focus-visible {
+  z-index: 3;
+  box-shadow: inset 0 0 0 3px var(--p1), 0 0 0 2px rgba(88,166,255,0.28);
+}
+
+.nonogram-cell:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.nonogram-cell:disabled {
+  cursor: default;
+}
+
+.nonogram-cell.major-right,
+.nonogram-top-clue.major-right {
+  border-right-color: #6e7681;
+  border-right-width: 2px;
+}
+
+.nonogram-cell.major-bottom,
+.nonogram-left-clue.major-bottom {
+  border-bottom-color: #6e7681;
+  border-bottom-width: 2px;
+}
+
+.nonogram-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.nonogram-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.nonogram-stats div,
+.nonogram-picture {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: #161b22;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.72rem;
+}
+
+.nonogram-stats strong,
+.nonogram-picture strong {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-transform: capitalize;
+}
+
+.nonogram-picture.solved {
+  color: var(--win);
+  background: #0d2614;
+  border-color: #2ea043;
+}
+
+.nonogram-toolset,
+.nonogram-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.nonogram-toolset {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nonogram-tool {
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  color: var(--text);
+  background: #21262d;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+}
+
+.nonogram-tool:hover:not(:disabled),
+.nonogram-tool:focus-visible:not(:disabled),
+.nonogram-tool.active {
+  color: var(--text);
+  border-color: var(--p1);
+  background: #263445;
+}
+
+.nonogram-tool:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.nonogram-tool:disabled {
+  color: #6e7681;
+  cursor: default;
+  opacity: 0.58;
+}
+
 /* ── Mobile tweaks ───────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .header {
@@ -1244,6 +1514,11 @@ body {
   .sudoku-number { font-size: 0.95rem; }
   .sudoku-tool { height: 34px; padding: 0 7px; font-size: 0.76rem; }
   .sudoku-notes { font-size: 0.46rem; }
+
+  .nonogram-game { padding: 10px; }
+  .nonogram-corner { font-size: 0.68rem; }
+  .nonogram-left-clue { padding: 1px 4px; }
+  .nonogram-tool { height: 34px; padding: 0 7px; font-size: 0.76rem; }
 
   .bar-hint { display: none; }
 }
@@ -1334,6 +1609,37 @@ body {
   .sudoku-pad {
     grid-template-columns: repeat(9, minmax(0, 1fr));
     gap: 5px;
+  }
+
+  .nonogram-shell {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 12px;
+    max-width: 620px;
+  }
+
+  .nonogram-frame {
+    width: min(100%, 62vh);
+    justify-self: center;
+  }
+
+  .nonogram-panel {
+    width: min(100%, 620px);
+    justify-self: center;
+    gap: 10px;
+  }
+
+  .nonogram-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nonogram-stats div,
+  .nonogram-picture {
+    padding: 7px 9px;
+  }
+
+  .nonogram-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
