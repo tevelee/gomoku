@@ -170,6 +170,7 @@ body {
   line-height: 1.5;
 }
 .morris-hint { right: auto; left: 50%; transform: translateX(-50%); text-align: center; }
+.ataxx-hint { right: auto; left: 50%; transform: translateX(-50%); text-align: center; }
 
 /* ── Launcher ────────────────────────────────────────────────────────────── */
 .launcher {
@@ -564,6 +565,51 @@ select:focus { border-color: var(--p1); }
   transform-box: fill-box;
   transform-origin: center;
   animation: c4-win-pulse 900ms ease-in-out infinite;
+}
+
+/* ── Ataxx animations ───────────────────────────────────────────────────── */
+@keyframes ataxx-convert {
+  0%   { transform: scale(0.72); opacity: 0.35; }
+  70%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+@keyframes ataxx-jump {
+  0%   { transform: translate(var(--ataxx-move-dx), var(--ataxx-move-dy)) scale(1); }
+  65%  { transform: translate(0, 0) scale(1.08); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes ataxx-clone {
+  0%   { transform: scale(0.35); opacity: 0.25; }
+  70%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+@keyframes ataxx-clone-source {
+  0%, 100% { transform: scale(1); }
+  42%      { transform: scale(1.16); }
+}
+
+.ataxx-piece,
+.ataxx-converted-piece,
+.ataxx-jump-piece,
+.ataxx-clone-piece,
+.ataxx-clone-source {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ataxx-piece {
+  animation: piece-pop 190ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ataxx-converted-piece {
+  animation: ataxx-convert 280ms ease-out;
+}
+.ataxx-jump-piece {
+  animation: ataxx-jump 260ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+.ataxx-clone-piece {
+  animation: ataxx-clone 230ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ataxx-clone-source {
+  animation: ataxx-clone-source 230ms ease-out;
 }
 
 /* ── Mobile tweaks ───────────────────────────────────────────────────────── */

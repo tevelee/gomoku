@@ -27,6 +27,7 @@ Each game should eventually have:
 | Nine Men's Morris | Abstract strategy | vs AI, Local 2P | Placement, mill removal, moving/flying phases |
 | Othello | Abstract strategy | vs AI, Local 2P | Classic 8x8 disk flipping |
 | 4 in a Row | Abstract strategy | vs AI, Local 2P | Connect Four-style vertical grid |
+| Ataxx | Abstract strategy | vs AI, Local 2P | Clone, jump, and convert adjacent pieces |
 
 ## Planned Game Candidates
 
@@ -37,7 +38,6 @@ Each game should eventually have:
 | Tic Tac Toe | Grid games | vs AI, Local 2P | Fast baseline game |
 | Ultimate Tic-Tac-Toe | Grid games | vs AI, Local 2P | Strategic tic-tac-toe variant |
 | Eltunos Tic Tac Toe | Custom variants | vs AI, Local 2P | Needs rule definition |
-| Ataxx | Abstract strategy | vs AI, Local 2P | Formerly noted as Virusos Jatek |
 | Nonogram | Puzzle | Solo | Could support generated puzzles |
 | Backgammon | Race/table games | vs AI, Local 2P | Dice, bearing off, doubling later |
 | Threes / 2048 | Puzzle | Solo | Swipe/merge grid |

@@ -178,7 +178,25 @@ function GameGraphic({ type }) {
           <circle cx="78" cy="56" r="8" fill="#0d1117" opacity="0.6" />
         </>
       ) : null}
-      {type === 'pentago' || type === 'quarto' || type === 'quoridor' || type === 'mastermind' || type === 'minesweeper' || type === 'dice' || type === 'ataxx' ? (
+      {type === 'ataxx' && (
+        <>
+          {Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => {
+            const filled =
+              (r === 0 && c === 0) || (r === 6 && c === 6) ||
+              (r === 0 && c === 6) || (r === 6 && c === 0) ||
+              (r === 2 && c > 2 && c < 5) || (r === 3 && c === 3)
+            const color = (r === 0 && c === 6) || (r === 6 && c === 0) || (r === 2 && c === 4) ? p2 : p1
+            return (
+              <g key={`${r}-${c}`}>
+                <rect x={38 + c * 12} y={14 + r * 12} width="11" height="11" rx="2" fill={(r + c) % 2 ? '#21262d' : '#161b22'} stroke={line} strokeWidth="0.5" />
+                {filled && <circle cx={43.5 + c * 12} cy={19.5 + r * 12} r="4" fill={color} />}
+              </g>
+            )
+          }))}
+          <path d="M80 50L92 38M80 50L68 62" stroke={gold} strokeWidth="3" strokeLinecap="round" />
+        </>
+      )}
+      {type === 'pentago' || type === 'quarto' || type === 'quoridor' || type === 'mastermind' || type === 'minesweeper' || type === 'dice' ? (
         <>
           <rect x="38" y="16" width="84" height="80" rx="8" fill="#161b22" stroke={line} />
           {[0, 1, 2, 3].map(i => <circle key={i} cx={56 + (i % 2) * 48} cy={34 + Math.floor(i / 2) * 42} r="9" fill={[p1, p2, gold, green][i]} />)}

@@ -136,10 +136,10 @@ export const games = [
   {
     id: 'ataxx',
     title: 'Ataxx',
-    category: 'Custom Variants',
-    status: 'planned',
+    category: 'Abstract Strategy',
+    status: 'playable',
     modes: ['vs-ai', 'local-2p'],
-    tags: ['grid', 'turn-based'],
+    tags: ['abstract', 'grid', 'turn-based'],
     complexity: 'Medium',
     duration: '5-15 min',
     visual: 'ataxx',
