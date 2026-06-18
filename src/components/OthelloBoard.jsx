@@ -179,7 +179,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
         const color  = cell === P1 ? p1Color : p2Color
         const isLast = i === lastMove
         return (
-          <g key={i}>
+          <g key={`${i}-${cell}`} className="othello-piece-g">
             {isLast && <circle cx={x} cy={y} r={26} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />}
             <circle cx={x} cy={y} r={22}
               fill={color}

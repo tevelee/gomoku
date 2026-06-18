@@ -259,12 +259,14 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
           return
         }
       }
+      if (canvas.closest('.game-layer')?.style.visibility !== 'visible') return
       const rect = canvas.getBoundingClientRect()
       hoverCell.current = p2g(e.clientX - rect.left, e.clientY - rect.top)
       drawFrame()
     }
 
     function onWindowMouseUp(e) {
+      if (!dragOrigin) return
       const wasDrag = didDrag
       dragOrigin = null
       didDrag    = false

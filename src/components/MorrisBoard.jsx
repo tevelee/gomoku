@@ -240,16 +240,17 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
 
       {/* Win mill highlight */}
       {winMill && winMill.map((n, i) => (
-        <circle key={i} cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={22}
-          fill="none" stroke="#e3b341" strokeWidth="3" opacity="0.7" />
+        <circle key={i} className="morris-mill-ring"
+          cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={22}
+          fill="none" stroke="#e3b341" strokeWidth="3" />
       ))}
 
       {/* Valid placement / move targets */}
       {!mustRemove && [...validTargets].map(n => (
-        <circle key={n} cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={16}
+        <circle key={n} className="morris-hint-ring"
+          cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={16}
           fill={currentColor() + '22'} stroke={currentColor()} strokeWidth="1.5"
-          strokeDasharray="4 3" style={{ cursor: 'pointer' }}
-          onClick={() => handleNodeClick(n)}
+          strokeDasharray="4 3"
         />
       ))}
 
@@ -267,6 +268,13 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         )
       ))}
 
+      {/* Placement ripple on last-placed node */}
+      {lastNode !== -1 && cells[lastNode] !== 0 && (
+        <circle key={lastNode} className="morris-ripple"
+          cx={NODE_POS[lastNode][0]} cy={NODE_POS[lastNode][1]}
+          r={20} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" />
+      )}
+
       {/* Pieces */}
       {cells.map((p, i) => {
         if (p === 0) return null
@@ -276,19 +284,16 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         const isSel    = i === selected
         const removable = mustRemove && validTargets.has(i)
         return (
-          <g key={i} style={{ cursor: 'pointer' }} onClick={() => handleNodeClick(i)}>
+          <g key={i} className="morris-piece-g" style={{ cursor: 'pointer' }} onClick={() => handleNodeClick(i)}>
             {isSel && (
-              <circle cx={cx} cy={cy} r={24} fill="none" stroke="#e3b341" strokeWidth="2.5" />
+              <circle cx={cx} cy={cy} r={24} className="morris-sel-ring"
+                fill="none" stroke="#e3b341" strokeWidth="2.5" />
             )}
             <circle cx={cx} cy={cy} r={18}
               fill={col}
               style={{ filter: isLast ? `drop-shadow(0 0 8px ${col})` : `drop-shadow(0 0 3px ${col}88)` }}
             />
-            {/* Specular highlight */}
             <circle cx={cx - 5} cy={cy - 5} r={6} fill="rgba(255,255,255,0.22)" />
-            {isLast && (
-              <circle cx={cx} cy={cy} r={21} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-            )}
             {removable && (
               <circle cx={cx} cy={cy} r={22} fill="none" stroke="#f85149" strokeWidth="2"
                 strokeDasharray="5 3" />
