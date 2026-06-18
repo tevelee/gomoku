@@ -7,6 +7,7 @@ import { BOARD_LAYOUTS as ATAXX_BOARD_LAYOUTS } from './games/ataxx/logic.js'
 import CheckersGame from './games/checkers/Game.jsx'
 import DotsBoxesGame from './games/dots-boxes/Game.jsx'
 import SudokuGame from './games/sudoku/Game.jsx'
+import BackgammonGame from './games/backgammon/Game.jsx'
 import { gamesById } from './gameRegistry.js'
 
 export const playableGames = [
@@ -66,6 +67,12 @@ export const playableGames = [
         ],
       },
     ],
+  },
+  {
+    ...gamesById.backgammon,
+    Component: BackgammonGame,
+    hint: 'Roll dice · Tap a checker, entry, or bear-off tray',
+    scoreLabels: ['P1', 'P2'],
   },
   {
     ...gamesById.sudoku,

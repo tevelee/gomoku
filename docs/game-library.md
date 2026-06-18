@@ -30,6 +30,7 @@ Each game should eventually have:
 | Ataxx | Abstract strategy | vs AI, Local 2P | Clone, jump, convert adjacent pieces, and selectable obstacle boards |
 | Checkers | Abstract strategy | vs AI, Local 2P | American checkers with forced captures |
 | Dots and Boxes | Grid games | vs AI, Local 2P | Selectable 3x3 through 6x6 box grids |
+| Backgammon | Race/table games | vs AI, Local 2P | Dice movement, hits, bar entry, and bearing off |
 | Sudoku | Puzzle | Solo | Generated puzzles with notes, hints, and uniqueness checks |
 
 ## Planned Game Candidates
@@ -40,7 +41,6 @@ Each game should eventually have:
 | Ultimate Tic-Tac-Toe | Grid games | vs AI, Local 2P | Strategic tic-tac-toe variant |
 | Vanishing Tic Tac Toe | Grid games | vs AI, Local 2P | Also known as Tic Tac Toe Disappear or XOGone |
 | Nonogram | Puzzle | Solo | Could support generated puzzles |
-| Backgammon | Race/table games | vs AI, Local 2P | Dice, bearing off, doubling later |
 | Threes | Puzzle | Solo | Swipe/merge grid with 1, 2, and 3+ tiles |
 | 2048 | Puzzle | Solo | Swipe/merge powers-of-two grid |
 | Crosswords | Word games | Solo | Needs puzzle source or generator |
