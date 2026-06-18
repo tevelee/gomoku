@@ -9,6 +9,7 @@ import DotsBoxesGame from './games/dots-boxes/Game.jsx'
 import SudokuGame from './games/sudoku/Game.jsx'
 import BackgammonGame from './games/backgammon/Game.jsx'
 import NonogramGame from './games/nonogram/Game.jsx'
+import BlockPuzzleGame from './games/block-puzzle/Game.jsx'
 import { gamesById } from './gameRegistry.js'
 
 export const playableGames = [
@@ -94,6 +95,12 @@ export const playableGames = [
         ],
       },
     ],
+  },
+  {
+    ...gamesById['block-puzzle'],
+    Component: BlockPuzzleGame,
+    hint: 'Drag a piece onto the board · Complete rows or columns',
+    scoreLabels: ['Score', 'Best'],
   },
   {
     ...gamesById.sudoku,

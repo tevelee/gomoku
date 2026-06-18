@@ -352,6 +352,55 @@ export default function GameThumbnail({ type }) {
     )
   }
 
+  function GemSquare({ x, y, size = 10, fill = paint('goldDisc') }) {
+    const gx = Number(x)
+    const gy = Number(y)
+    const gs = Number(size)
+    return (
+      <g>
+        <rect x={gx + 1.3} y={gy + 2} width={gs} height={gs} rx="2.2" fill="#020409" opacity="0.32" />
+        <rect x={gx} y={gy} width={gs} height={gs} rx="2" fill="#b8873e" />
+        <rect x={gx + 1.2} y={gy + 1.2} width={gs - 2.4} height={gs - 2.4} rx="1.3" fill={fill} />
+        <path
+          d={`M${gx + 2.2} ${gy + 2.2}H${gx + gs - 2.2}L${gx + gs - 4} ${gy + gs / 2}L${gx + gs - 2.2} ${gy + gs - 2.2}H${gx + 2.2}L${gx + 4} ${gy + gs / 2}Z`}
+          fill="#ffffff"
+          opacity="0.2"
+        />
+      </g>
+    )
+  }
+
+  function renderBlockPuzzle() {
+    const blocks = [
+      [0, 2, paint('greenDisc')], [0, 3, paint('greenDisc')],
+      [1, 0, paint('goldDisc')], [1, 1, paint('p1Disc')], [1, 2, paint('greenDisc')], [1, 4, paint('p2Disc')], [1, 5, paint('p2Disc')], [1, 6, paint('p2Disc')],
+      [2, 0, paint('goldDisc')], [2, 1, paint('goldDisc')], [2, 2, paint('goldDisc')],
+      [3, 0, paint('goldDisc')], [3, 1, paint('p2Disc')], [3, 2, paint('p2Disc')],
+      [4, 0, paint('goldDisc')], [4, 1, paint('p1Disc')], [4, 2, paint('p1Disc')], [4, 5, paint('p2Disc')], [4, 6, paint('p2Disc')],
+      [5, 0, paint('goldDisc')], [5, 1, paint('p1Disc')], [5, 2, paint('p1Disc')], [5, 5, paint('p2Disc')], [5, 6, paint('p2Disc')],
+    ]
+
+    return (
+      <Board x="28" y="9" w="104" h="92" rx="7" fill={paint('slate')} stroke="#665160">
+        <Grid x="39" y="19" w="77" h="66" cols="7" rows="6" color="#5a4652" width="0.9" />
+        {blocks.map(([row, col, fill], index) => (
+          <GemSquare key={index} x={40 + col * 11} y={20 + row * 11} size="9.2" fill={fill} />
+        ))}
+        <g transform="translate(44 90) scale(0.62)">
+          <GemSquare x="0" y="0" size="9.2" fill={paint('goldDisc')} />
+          <GemSquare x="11" y="0" size="9.2" fill={paint('goldDisc')} />
+          <GemSquare x="22" y="0" size="9.2" fill={paint('goldDisc')} />
+          <GemSquare x="22" y="11" size="9.2" fill={paint('goldDisc')} />
+        </g>
+        <g transform="translate(86 90) scale(0.62)">
+          <GemSquare x="0" y="0" size="9.2" fill={paint('greenDisc')} />
+          <GemSquare x="11" y="0" size="9.2" fill={paint('greenDisc')} />
+          <GemSquare x="11" y="11" size="9.2" fill={paint('greenDisc')} />
+        </g>
+      </Board>
+    )
+  }
+
   function renderBackgammon() {
     return (
       <Board x="23" y="13" w="114" h="84" rx="9" fill={paint('darkWood')} stroke="#9a7044">
@@ -658,6 +707,7 @@ export default function GameThumbnail({ type }) {
     if (type === 'ultimate') return renderTicTacToe('ultimate')
     if (type === 'vanish') return renderTicTacToe('vanish')
     if (type === 'nonogram') return renderGridPuzzle('nonogram')
+    if (type === 'block-puzzle') return renderBlockPuzzle()
     if (type === 'sudoku') return renderGridPuzzle('sudoku')
     if (type === 'crossword') return renderGridPuzzle('crossword')
     if (type === 'minesweeper') return renderGridPuzzle('minesweeper')

@@ -157,6 +157,17 @@ export const games = [
     visual: 'nonogram',
   },
   {
+    id: 'block-puzzle',
+    title: 'Block Puzzle',
+    category: 'Puzzle',
+    status: 'playable',
+    modes: ['solo'],
+    tags: ['puzzle', 'grid', 'solo', 'quick'],
+    complexity: 'Light',
+    duration: '3-20 min',
+    visual: 'block-puzzle',
+  },
+  {
     id: 'backgammon',
     title: 'Backgammon',
     category: 'Race / Table',
