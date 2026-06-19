@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { P1_COLOR, P2_COLOR } from '../game/colors.js'
+import { P1_COLOR, P2_COLOR } from '../games/shared/colors.js'
 
 const GOLD = '#e3b341'
 const GREEN = '#3fb950'

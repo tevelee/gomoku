@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../../game/colors.js'
+import { playerColor } from '../shared/colors.js'
 import { computeBackgammonTurn } from './ai.js'
 import {
   BAR,
@@ -83,10 +83,6 @@ function makeInitialState() {
     lastMove: null,
     turnMoves: [],
   }
-}
-
-function playerColor(player) {
-  return player === P1 ? P1_COLOR : P2_COLOR
 }
 
 function pointNumber(index) {

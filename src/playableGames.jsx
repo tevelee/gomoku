@@ -1,7 +1,7 @@
-import GameCanvas from './components/GameCanvas'
-import MorrisBoard from './components/MorrisBoard'
-import OthelloBoard from './components/OthelloBoard'
-import Connect4Board from './components/Connect4Board'
+import GomokuGame from './games/gomoku/Game.jsx'
+import MorrisGame from './games/morris/Game.jsx'
+import OthelloGame from './games/othello/Game.jsx'
+import Connect4Game from './games/connect4/Game.jsx'
 import AtaxxGame from './games/ataxx/Game.jsx'
 import { BOARD_LAYOUTS as ATAXX_BOARD_LAYOUTS } from './games/ataxx/logic.js'
 import CheckersGame from './games/checkers/Game.jsx'
@@ -16,21 +16,21 @@ import { gamesById } from './gameRegistry.js'
 export const playableGames = [
   {
     ...gamesById.gomoku,
-    Component: GameCanvas,
+    Component: GomokuGame,
     hint: 'Drag · Pinch/scroll to zoom · Tap to place',
   },
   {
     ...gamesById.morris,
-    Component: MorrisBoard,
+    Component: MorrisGame,
     hint: 'Tap a node to place · Tap piece then target to move',
   },
   {
     ...gamesById.othello,
-    Component: OthelloBoard,
+    Component: OthelloGame,
   },
   {
     ...gamesById.connect4,
-    Component: Connect4Board,
+    Component: Connect4Game,
   },
   {
     ...gamesById.ataxx,

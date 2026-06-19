@@ -22,6 +22,19 @@ export function createGameUiState(overrides = {}) {
   }
 }
 
+export function incrementPlayerScore(scores, winner) {
+  const next = {
+    ...DEFAULT_GAME_UI.scores,
+    ...(scores ?? {}),
+  }
+  if (winner !== PLAYER_1 && winner !== PLAYER_2) return next
+  const key = winner === PLAYER_1 ? 'p1' : 'p2'
+  return {
+    ...next,
+    [key]: next[key] + 1,
+  }
+}
+
 export function normalizeGameUiState(next = {}, previous = DEFAULT_GAME_UI) {
   const base = createGameUiState(previous)
   return createGameUiState({

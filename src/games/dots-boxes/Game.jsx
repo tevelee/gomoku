@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, forwardRef } from 'react'
-import { DRAW } from '../../game/runtime.js'
+import { DRAW } from '../shared/runtime.js'
 import { useGameSync } from '../../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../../game/colors.js'
+import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
 import { computeDotsMove } from './ai.js'
 import {
   P1,
@@ -20,10 +20,6 @@ const CELL = 64
 const PAD = 40
 const FOOTER = 38
 const DOT_R = 5
-
-function playerColor(player) {
-  return player === P1 ? P1_COLOR : P2_COLOR
-}
 
 function finishMove(state, key, pvp) {
   const movedPlayer = state.current

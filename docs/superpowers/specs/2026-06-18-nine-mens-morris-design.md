@@ -22,16 +22,19 @@ A tab bar is added to the `Header` component showing two tabs: **Gomoku** and **
 
 ```
 src/
-  game/
+  games/
     gomoku/
-      logic.js        ← moved from src/game/logic.js
-      ai.js           ← moved from src/game/ai.js
+      Game.jsx
+      logic.js
+      ai.js
     morris/
-      logic.js        ← new: board representation, mill detection, win conditions
-      ai.js           ← new: minimax AI for Morris
+      Game.jsx
+      logic.js        ← board representation, mill detection, win conditions
+      ai.js           ← minimax AI for Morris
+    shared/
+      runtime.js
+      colors.js
   components/
-    GameCanvas.jsx    ← unchanged (Gomoku canvas, import path updated)
-    MorrisBoard.jsx   ← new: SVG-based Morris board
     Header.jsx        ← updated: game tab bar + status pill
     BottomBar.jsx     ← unchanged per-game controls
   App.jsx             ← updated: game selection state, conditional render
@@ -58,7 +61,7 @@ Exact node positions stored as `[x, y]` fractions of the SVG viewBox. Adjacency 
 
 Mills: 16 possible mills (3 nodes in a straight line). Stored as a constant array of `[a, b, c]` triples.
 
-## Morris Game Logic (`src/game/morris/logic.js`)
+## Morris Game Logic (`src/games/morris/logic.js`)
 
 Exports:
 - `PLAYER1 = 1`, `PLAYER2 = 2`
@@ -80,17 +83,17 @@ Board state: `{ cells: number[24], piecesInHand: [p1, p2], piecesOnBoard: [p1, p
 3. **Flying**: When a player has exactly 3 pieces, they may move to any empty node.
 4. **Win conditions**: Opponent has <3 pieces OR opponent has no valid moves.
 
-## Morris Board Component (`src/components/MorrisBoard.jsx`)
+## Morris Board Component (`src/games/morris/Game.jsx`)
 
 - SVG-based, responsive (fills canvas-wrap)
 - Renders: board lines, nodes as circles, pieces as filled circles with player colors
 - Highlights: selected piece (yellow ring), valid move targets (dimmed ring), last move, winning mill
 - Touch + click events for placing/selecting/moving
 - Props: `ref` (exposes `reset()`), `mode`, `difficulty`, `onStateChange`
-- Same `forwardRef` + `useImperativeHandle` pattern as `GameCanvas`
+- Same `forwardRef` reset/undo contract as the other playable games.
 - Game state entirely in `useRef` (no React re-render loop); single `useEffect` setup
 
-## Morris AI (`src/game/morris/ai.js`)
+## Morris AI (`src/games/morris/ai.js`)
 
 Exports: `computeMorrisMove(board, phase, difficulty)`
 
@@ -105,7 +108,7 @@ Eval function: `mills * 3 + mobility + pieces_on_board * 2`
 
 ## App Changes (`src/App.jsx`)
 
-Add `game` state: `'gomoku' | 'morris'`. Pass to `Header` for tab rendering. Conditionally render `GameCanvas` or `MorrisBoard`. Each game has its own `uiState` and `canvasRef`.
+Add `game` state: `'gomoku' | 'morris'`. Pass to `Header` for tab rendering and resolve the active game through the playable-game registry. Each game has its own `uiState` and ref.
 
 ## CSS Changes (`src/App.css`)
 

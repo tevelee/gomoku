@@ -3,7 +3,7 @@ import Header from './components/Header'
 import BottomBar from './components/BottomBar'
 import Launcher from './components/Launcher'
 import GameHost from './components/GameHost'
-import { DRAW, PLAYER_1, PLAYER_2, createGameUiState, deriveStatus } from './game/runtime.js'
+import { DRAW, PLAYER_1, PLAYER_2, createGameUiState, deriveStatus } from './games/shared/runtime.js'
 import { playableGameIds, playableGamesById } from './playableGames.jsx'
 
 const CONFETTI = [

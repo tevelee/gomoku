@@ -1,4 +1,4 @@
-import { DRAW, PLAYER_1 as P1, PLAYER_2 as P2 } from '../../game/runtime.js'
+import { DRAW, PLAYER_1 as P1, PLAYER_2 as P2 } from '../shared/runtime.js'
 
 export { P1, P2 }
 

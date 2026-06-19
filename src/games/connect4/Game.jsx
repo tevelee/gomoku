@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, forwardRef } from 'react'
-import { ROWS, COLS, P1, P2, makeBoard, dropPiece, getValidCols, checkWinAt, getWinLine, isBoardFull } from '../game/connect4/logic.js'
-import { computeConnect4Move } from '../game/connect4/ai.js'
-import { useGameSync } from '../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../game/colors.js'
+import { ROWS, COLS, P1, P2, makeBoard, dropPiece, getValidCols, checkWinAt, getWinLine, isBoardFull } from './logic.js'
+import { computeConnect4Move } from './ai.js'
+import { useGameSync } from '../../hooks/useGameSync.js'
+import { incrementPlayerScore } from '../shared/runtime.js'
+import { playerColor } from '../shared/colors.js'
 
 const CELL = 60, R = 24
 const W = COLS * CELL          // 420
@@ -36,7 +37,7 @@ function makeInitialState() {
   }
 }
 
-const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onStateChange }, ref) {
+const Connect4Game = forwardRef(function Connect4Game({ mode, difficulty, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const [hoverCol, setHoverCol] = useState(-1)
 
@@ -70,7 +71,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
 
     if (checkWinAt(res.board, res.row, col)) {
       const line    = getWinLine(res.board, res.row, col)
-      const newScores = { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 }
+      const newScores = incrementPlayerScore(scores, current)
       return { ...s, board: res.board, winner: current, winLine: line, lastMove: { row: res.row, col }, busy: false, scores: newScores }
     }
 
@@ -96,7 +97,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
   const pvp       = mode === 'pvp'
   const validCols = new Set(!winner && !busy && (pvp || current === P1) ? getValidCols(board) : [])
   const winSet    = winLine ? new Set(winLine.map(([r, c]) => r * COLS + c)) : null
-  const curColor  = current === P1 ? P1_COLOR : P2_COLOR
+  const curColor  = playerColor(current)
 
   return (
     <svg
@@ -123,7 +124,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
       {/* Pieces (behind board overlay so they appear through holes) */}
       {board.map((row, r) => row.map((cell, c) => {
         if (!cell) return null
-        const color  = cell === P1 ? P1_COLOR : P2_COLOR
+        const color  = playerColor(cell)
         const isWin  = winSet?.has(r * COLS + c)
         const isLast = lastMove?.row === r && lastMove?.col === c
         return (
@@ -159,7 +160,7 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
       {/* Win line ring highlights (on top of overlay) */}
       {winSet && board.map((row, r) => row.map((cell, c) => {
         if (!winSet.has(r * COLS + c)) return null
-        const color = cell === P1 ? P1_COLOR : P2_COLOR
+        const color = playerColor(cell)
         return (
           <circle key={`win-${r}-${c}`} className="c4-win-piece"
             cx={colX(c)} cy={rowY(r)} r={R}
@@ -183,4 +184,4 @@ const Connect4Board = forwardRef(function Connect4Board({ mode, difficulty, onSt
   )
 })
 
-export default Connect4Board
+export default Connect4Game

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../../game/colors.js'
+import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
 import { computeHiveMove } from './ai.js'
 import {
   ANT,
@@ -109,10 +109,6 @@ function useHiveLayout() {
   }, [])
 
   return narrow ? LAYOUTS.mobile : LAYOUTS.desktop
-}
-
-function playerColor(player) {
-  return player === P1 ? P1_COLOR : P2_COLOR
 }
 
 function playerInk(player) {

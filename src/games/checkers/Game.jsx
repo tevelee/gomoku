@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../../game/colors.js'
+import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
+import { incrementPlayerScore } from '../shared/runtime.js'
 import { computeCheckersMove } from './ai.js'
 import {
   SIZE,
@@ -45,7 +46,7 @@ function cellCenter(cellIdx) {
 }
 
 function pieceColor(piece) {
-  return owner(piece) === P1 ? P1_COLOR : P2_COLOR
+  return playerColor(owner(piece))
 }
 
 function isKingPiece(piece) {
@@ -85,9 +86,7 @@ function finishMove(s, move, pvp) {
   }
 
   const winner = getWinner(result.board)
-  const scores = { ...s.scores }
-  if (winner === P1) scores.p1++
-  else if (winner === P2) scores.p2++
+  const scores = incrementPlayerScore(s.scores, winner)
 
   const next = opponent(s.current)
   const needsAI = !pvp && next === P2 && !winner
@@ -128,10 +127,7 @@ const CheckersGame = forwardRef(function CheckersGame({ mode, difficulty, onStat
         const move = computeCheckersMove(s.board, s.current, diffRef.current, s.forcedFrom)
         if (!move) {
           const winner = getWinner(s.board)
-          const scores = { ...s.scores }
-          if (winner === P1) scores.p1++
-          else if (winner === P2) scores.p2++
-          return { ...s, winner, scores, busy: false, selected: -1, forcedFrom: -1 }
+          return { ...s, winner, scores: incrementPlayerScore(s.scores, winner), busy: false, selected: -1, forcedFrom: -1 }
         }
         return finishMove(s, move, modeRef.current === 'pvp')
       })

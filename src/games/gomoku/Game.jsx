@@ -1,11 +1,11 @@
 import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
-import { HUMAN, BOT, detectWin } from '../game/gomoku/logic.js'
-import { computeAIMove } from '../game/gomoku/ai.js'
-import { P1_COLOR, P2_COLOR, hexToRgbParts } from '../game/colors.js'
+import { HUMAN, BOT, detectWin } from './logic.js'
+import { computeAIMove } from './ai.js'
+import { P1_COLOR, P2_COLOR, hexToRgbParts } from '../shared/colors.js'
 
 const BASE_CELL = 44
 
-const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateChange }, ref) {
+const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateChange }, ref) {
   const canvasEl = useRef(null)
 
   // View state — all imperative, no React re-renders
@@ -514,4 +514,4 @@ const GameCanvas = forwardRef(function GameCanvas({ mode, difficulty, onStateCha
   return <canvas ref={canvasEl} className="game-canvas" />
 })
 
-export default GameCanvas
+export default GomokuGame

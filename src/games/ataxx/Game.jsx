@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../../game/colors.js'
+import { P1_COLOR, P2_COLOR, playerColor as pieceColor } from '../shared/colors.js'
+import { incrementPlayerScore } from '../shared/runtime.js'
 import { computeAtaxxMove } from './ai.js'
 import {
   SIZE,
@@ -43,16 +44,9 @@ function cellCenter(cellIdx) {
   return { x: cellX(cellIdx) + CELL / 2, y: cellY(cellIdx) + CELL / 2 }
 }
 
-function pieceColor(player) {
-  return player === P1 ? P1_COLOR : P2_COLOR
-}
-
 function finalizeTurn(s, board, move, converted, movedPlayer, pvp) {
   const turn = getNextTurn(board, movedPlayer)
-  const scores = { ...s.scores }
-
-  if (turn.winner === P1) scores.p1++
-  else if (turn.winner === P2) scores.p2++
+  const scores = incrementPlayerScore(s.scores, turn.winner)
 
   const needsAI = !pvp && turn.current === P2 && !turn.winner
 
@@ -101,16 +95,13 @@ const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, on
         const move = computeAtaxxMove(s.board, s.current, diffRef.current)
         if (!move) {
           const turn = passTurn(s.board, s.current)
-          const scores = { ...s.scores }
-          if (turn.winner === P1) scores.p1++
-          else if (turn.winner === P2) scores.p2++
           return {
             ...s,
             current: turn.current,
             winner: turn.winner,
             passed: turn.passed,
             busy: false,
-            scores,
+            scores: incrementPlayerScore(s.scores, turn.winner),
             selected: -1,
           }
         }

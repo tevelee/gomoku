@@ -1,5 +1,5 @@
 import { useRef, useEffect, useImperativeHandle } from 'react'
-import { normalizeGameUiState } from '../game/runtime.js'
+import { normalizeGameUiState } from '../games/shared/runtime.js'
 
 export function useGameSync({
   ref, mode, difficulty, onStateChange,

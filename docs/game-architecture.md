@@ -78,11 +78,11 @@ Fields:
 - `historyLen`: number of undoable human-visible steps; this should come from
   the same local history stack used by `undo()`
 
-Use `src/game/runtime.js` for constants and normalization helpers.
+Use `src/games/shared/runtime.js` for constants and normalization helpers.
 
 ## Recommended File Layout
 
-Future games should use this shape:
+Playable games use this shape:
 
 ```text
 src/games/<game-id>/
@@ -92,9 +92,8 @@ src/games/<game-id>/
   styles.css    # optional, only if shared CSS tokens are not enough
 ```
 
-The current four games still live in the older `src/components` and `src/game`
-layout. They are registered through `src/playableGames.jsx` so they can be
-migrated one at a time without changing `App.jsx`.
+Shared game helpers live in `src/games/shared`. Game shell components stay in
+`src/components`, and playable game registration stays in `src/playableGames.jsx`.
 
 ## Registration Checklist
 
@@ -129,7 +128,7 @@ array in its playable registry entry and read the selected values from
 
 - The launcher owns discovery UI; games should start directly in the playable
   board state.
-- Use shared colors from `src/game/colors.js` for player identity.
+- Use shared colors from `src/games/shared/colors.js` for player identity.
 - Use CSS tokens in `src/App.css` for shell surfaces, borders, text, and status
   colors.
 - Prefer SVG for fixed boards, canvas for very large/pannable boards, and DOM

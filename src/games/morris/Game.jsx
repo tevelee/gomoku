@@ -3,10 +3,11 @@ import {
   P1, P2,
   NODE_POS, EDGES, ADJACENCY, MILLS,
   detectMill, getRemovable, getValidPlacements, getValidMoveActions, checkWin,
-} from '../game/morris/logic.js'
-import { computeMorrisMove } from '../game/morris/ai.js'
-import { useGameSync } from '../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../game/colors.js'
+} from './logic.js'
+import { computeMorrisMove } from './ai.js'
+import { useGameSync } from '../../hooks/useGameSync.js'
+import { P1_COLOR, P2_COLOR, playerColor as pieceColor } from '../shared/colors.js'
+import { incrementPlayerScore } from '../shared/runtime.js'
 
 function makeInitialState() {
   return {
@@ -31,7 +32,7 @@ function findWinMill(cells, player) {
   return MILLS.find(m => m.every(n => cells[n] === player)) ?? null
 }
 
-const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateChange }, ref) {
+const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
@@ -110,7 +111,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
         winner: current, winMill: findWinMill(newCells, current), lastNode: placedAt,
         movingFrom, busy: false, selected: -1, removedPiece: null,
-        scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
+        scores: incrementPlayerScore(scores, current),
       }
     }
 
@@ -131,7 +132,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
           ...s,
           winner: current, winMill: findWinMill(cells, current),
           mustRemove: false, busy: false, selected: -1, movingFrom: -1, removedPiece: null,
-          scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
+          scores: incrementPlayerScore(scores, current),
         }
       }
 
@@ -155,7 +156,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
         winner: current, winMill: findWinMill(newCells, current),
         mustRemove: false, busy: false, lastNode: nodeIdx, movingFrom: -1,
         removedPiece, animationId,
-        scores: { ...scores, [current === P1 ? 'p1' : 'p2']: scores[current === P1 ? 'p1' : 'p2'] + 1 },
+        scores: incrementPlayerScore(scores, current),
       }
     }
 
@@ -234,8 +235,7 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
     }
   }
 
-  function pieceColor(p) { return p === P1 ? P1_COLOR : P2_COLOR }
-  function currentColor() { return current === P1 ? P1_COLOR : P2_COLOR }
+  function currentColor() { return pieceColor(current) }
 
   return (
     <svg
@@ -372,4 +372,4 @@ const MorrisBoard = forwardRef(function MorrisBoard({ mode, difficulty, onStateC
   )
 })
 
-export default MorrisBoard
+export default MorrisGame

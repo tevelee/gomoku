@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { createGameUiState, normalizeGameUiState } from '../game/runtime.js'
+import { createGameUiState, normalizeGameUiState } from '../games/shared/runtime.js'
 import { playableGames } from '../playableGames.jsx'
 
 function createInitialUiByGame() {

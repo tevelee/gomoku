@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, forwardRef } from 'react'
+import { incrementPlayerScore } from '../shared/runtime.js'
 import {
   P1, P2,
   makeBoard, getFlips, getValidMoves, applyMove, countPieces, getWinner, pos,
-} from '../game/othello/logic.js'
-import { computeOthelloMove } from '../game/othello/ai.js'
-import { useGameSync } from '../hooks/useGameSync.js'
-import { P1_COLOR, P2_COLOR } from '../game/colors.js'
+} from './logic.js'
+import { computeOthelloMove } from './ai.js'
+import { useGameSync } from '../../hooks/useGameSync.js'
+import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
 
 function makeInitialState() {
   return {
@@ -23,7 +24,7 @@ function makeInitialState() {
 // Star points (traditional board markers)
 const STARS = [18, 21, 42, 45]
 
-const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStateChange }, ref) {
+const OthelloGame = forwardRef(function OthelloGame({ mode, difficulty, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
@@ -58,9 +59,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
 
     if (oppMoves.length === 0 && myMoves.length === 0) {
       const winner    = getWinner(newBoard)
-      const newScores = { ...scores }
-      if (winner === P1) newScores.p1++
-      else if (winner === P2) newScores.p2++
+      const newScores = incrementPlayerScore(scores, winner)
       return { ...s, board: newBoard, winner, scores: newScores, lastMove: movedIdx, flipped: flips, passed: false, busy: false }
     }
 
@@ -80,9 +79,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
     const oppMoves = getValidMoves(board, opp)
     if (oppMoves.length === 0) {
       const winner    = getWinner(board)
-      const newScores = { ...scores }
-      if (winner === P1) newScores.p1++
-      else if (winner === P2) newScores.p2++
+      const newScores = incrementPlayerScore(scores, winner)
       return { ...s, winner, scores: newScores, passed: false, busy: false, flipped: [] }
     }
     const needsAI = !pvp && opp === P2
@@ -115,7 +112,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
     ? new Set(getValidMoves(board, current))
     : new Set()
 
-  const curColor = current === P1 ? P1_COLOR : P2_COLOR
+  const curColor = playerColor(current)
   const flippedSet = new Set(flipped)
 
   const { p1: p1count, p2: p2count } = countPieces(board)
@@ -164,7 +161,7 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
       {board.map((cell, i) => {
         if (!cell) return null
         const { x, y } = cellCenter(Math.floor(i/8), i%8)
-        const color  = cell === P1 ? P1_COLOR : P2_COLOR
+        const color  = playerColor(cell)
         const isLast = i === lastMove
         const isFlipped = flippedSet.has(i)
         return (
@@ -206,4 +203,4 @@ const OthelloBoard = forwardRef(function OthelloBoard({ mode, difficulty, onStat
   )
 })
 
-export default OthelloBoard
+export default OthelloGame

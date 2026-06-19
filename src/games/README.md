@@ -21,5 +21,5 @@ Minimum steps:
 4. Register the component in `src/playableGames.jsx`.
 5. Run `npm run build`.
 
-Use `src/game/runtime.js` for shell state constants and normalization. See
+Use `src/games/shared/runtime.js` for shell state constants and normalization. See
 `docs/game-architecture.md` for the full contract and design requirements.
