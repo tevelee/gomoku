@@ -1475,6 +1475,368 @@ body {
   stroke-width: 2.2px;
 }
 
+/* ── Mastermind ─────────────────────────────────────────────────────────── */
+.mastermind-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(88,166,255,0.08), rgba(63,185,80,0.04) 44%, rgba(248,81,73,0.05)),
+    var(--bg);
+  outline: none;
+}
+
+.mastermind-shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 560px) 224px;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 860px;
+  min-height: 0;
+}
+
+.mastermind-board,
+.mastermind-panel {
+  min-width: 0;
+  color: var(--text);
+  background: rgba(22,27,34,0.94);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 44px rgba(0,0,0,0.28);
+}
+
+.mastermind-board {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-height: min(100%, 690px);
+  padding: 14px;
+}
+
+.mastermind-secret {
+  display: grid;
+  grid-template-columns: repeat(var(--mastermind-pegs), 34px);
+  justify-content: center;
+  gap: 9px;
+  padding: 10px;
+  background: #0d1117;
+  border: 1px solid #26313d;
+  border-radius: var(--radius);
+}
+
+.mastermind-secret .mastermind-peg:not(.filled)::after {
+  content: "?";
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.mastermind-rows {
+  display: grid;
+  gap: 6px;
+  max-height: min(63vh, 570px);
+  padding-right: 2px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.mastermind-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 5px 7px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: var(--radius);
+}
+
+.mastermind-row.active {
+  background: #111b27;
+  border-color: rgba(88,166,255,0.7);
+  box-shadow: inset 3px 0 0 var(--p1);
+}
+
+.mastermind-row.empty {
+  opacity: 0.56;
+}
+
+.mastermind-row-number {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.mastermind-code {
+  display: grid;
+  grid-template-columns: repeat(var(--mastermind-pegs), 34px);
+  justify-content: center;
+  gap: 8px;
+}
+
+.mastermind-peg {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: #080c12;
+  border: 1px solid #39424d;
+  border-radius: 50%;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.55);
+}
+
+button.mastermind-peg {
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.mastermind-peg.filled {
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 28%, transparent 29%),
+    var(--peg-color);
+  border-color: rgba(255,255,255,0.24);
+  box-shadow:
+    inset 0 -6px 10px rgba(0,0,0,0.28),
+    0 5px 12px rgba(0,0,0,0.25);
+  animation: piece-pop 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+button.mastermind-peg:hover:not(:disabled),
+button.mastermind-peg:focus-visible,
+.mastermind-peg.active-slot {
+  border-color: var(--p1);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.4),
+    0 0 0 3px rgba(88,166,255,0.22);
+}
+
+button.mastermind-peg:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.mastermind-feedback {
+  display: grid;
+  grid-template-columns: repeat(2, 9px);
+  justify-content: center;
+  gap: 4px;
+}
+
+.mastermind-feedback-dot {
+  display: block;
+  width: 9px;
+  height: 9px;
+  background: #10151d;
+  border: 1px solid #3f4854;
+  border-radius: 50%;
+}
+
+.mastermind-feedback-dot.exact {
+  background: #e6edf3;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
+}
+
+.mastermind-feedback-dot.color {
+  background: #e3b341;
+  border-color: #ffd978;
+}
+
+.mastermind-panel {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: 14px;
+}
+
+.mastermind-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.mastermind-stats div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.72rem;
+}
+
+.mastermind-stats strong {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.mastermind-palette {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastermind-color {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid #3a424d;
+  border-radius: var(--radius);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.mastermind-color::before {
+  content: "";
+  width: min(28px, 78%);
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 28%, transparent 29%),
+    var(--peg-color);
+  border: 1px solid rgba(255,255,255,0.24);
+  border-radius: 50%;
+  box-shadow: inset 0 -6px 10px rgba(0,0,0,0.28);
+}
+
+.mastermind-color:hover:not(:disabled),
+.mastermind-color:focus-visible,
+.mastermind-color.active {
+  background: #212a35;
+  border-color: var(--p1);
+}
+
+.mastermind-color.active {
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.18);
+}
+
+.mastermind-color:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.mastermind-color:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.mastermind-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastermind-action {
+  height: 38px;
+  min-width: 0;
+  padding: 0 9px;
+  color: var(--text);
+  background: #21262d;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+}
+
+.mastermind-action.primary {
+  grid-column: 1 / -1;
+  color: #07120b;
+  background: var(--win);
+  border-color: var(--win);
+}
+
+.mastermind-action:hover:not(:disabled),
+.mastermind-action:focus-visible:not(:disabled) {
+  border-color: var(--p1);
+  background: #263445;
+}
+
+.mastermind-action.primary:hover:not(:disabled),
+.mastermind-action.primary:focus-visible:not(:disabled) {
+  color: #07120b;
+  background: #56d364;
+  border-color: #56d364;
+}
+
+.mastermind-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.mastermind-action:disabled {
+  color: #6e7681;
+  cursor: default;
+  opacity: 0.58;
+}
+
+.mastermind-action.primary:disabled {
+  color: #6e7681;
+  background: #21262d;
+  border-color: var(--border);
+}
+
+.mastermind-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.mastermind-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mastermind-result {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+}
+
+.mastermind-result strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.mastermind-result span {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.mastermind-result.solved {
+  border-color: #2ea043;
+  background: #0d2614;
+}
+
+.mastermind-result.failed {
+  border-color: #6e3531;
+  background: #241114;
+}
+
 /* ── Sudoku ─────────────────────────────────────────────────────────────── */
 .sudoku-game {
   display: flex;
@@ -3240,6 +3602,52 @@ body {
   .nonogram-left-clue { padding: 1px 4px; }
   .nonogram-tool { height: 34px; padding: 0 7px; font-size: 0.76rem; }
 
+  .mastermind-game { padding: 10px; }
+  .mastermind-board { padding: 9px; }
+  .mastermind-secret {
+    grid-template-columns: repeat(var(--mastermind-pegs), 28px);
+    gap: 6px;
+    padding: 8px;
+  }
+  .mastermind-rows { gap: 5px; }
+  .mastermind-row {
+    grid-template-columns: 20px minmax(0, 1fr) 42px;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 5px;
+  }
+  .mastermind-code {
+    grid-template-columns: repeat(var(--mastermind-pegs), 28px);
+    gap: 5px;
+  }
+  .mastermind-peg {
+    width: 28px;
+    height: 28px;
+  }
+  .mastermind-feedback {
+    grid-template-columns: repeat(2, 8px);
+    gap: 3px;
+  }
+  .mastermind-feedback-dot {
+    width: 8px;
+    height: 8px;
+  }
+  .mastermind-panel {
+    gap: 9px;
+    padding: 10px;
+  }
+  .mastermind-stats div {
+    padding: 7px 8px;
+    font-size: 0.66rem;
+  }
+  .mastermind-stats strong { font-size: 0.92rem; }
+  .mastermind-palette { gap: 6px; }
+  .mastermind-action {
+    height: 34px;
+    padding: 0 7px;
+    font-size: 0.74rem;
+  }
+
   .ttt-game,
   .utt-game {
     padding: 10px;
@@ -3472,6 +3880,43 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .mastermind-shell {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 12px;
+    max-width: 620px;
+  }
+
+  .mastermind-board {
+    width: min(100%, 560px);
+    justify-self: center;
+  }
+
+  .mastermind-rows {
+    max-height: min(50vh, 430px);
+  }
+
+  .mastermind-panel {
+    width: min(100%, 560px);
+    justify-self: center;
+  }
+
+  .mastermind-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mastermind-palette {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .mastermind-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mastermind-action.primary {
+    grid-column: auto;
+  }
+
   .ttt-board {
     width: min(100%, 62vh);
   }
@@ -3543,6 +3988,7 @@ body {
   .ttt-cell.removed-mark::before,
   .utt-mark,
   .utt-board-owner,
+  .mastermind-peg.filled,
   .block-puzzle-gem,
   .block-puzzle-cell.line-cleared::after {
     animation: none;
@@ -3554,6 +4000,9 @@ body {
   .ttt-cell,
   .utt-cell,
   .utt-small-board,
+  button.mastermind-peg,
+  .mastermind-color,
+  .mastermind-action,
   .block-puzzle-cell,
   .block-puzzle-piece-slot {
     transition: none;

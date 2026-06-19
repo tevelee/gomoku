@@ -38,6 +38,7 @@ Each game should eventually have:
 | Threes | Puzzle | Solo | One-cell swipe/merge grid with 1, 2, and 3+ tiles |
 | 2048 | Puzzle | Solo | Full-slide merge grid with powers of two |
 | Sudoku | Puzzle | Solo | Generated puzzles with notes, hints, and uniqueness checks |
+| Mastermind | Puzzle | Solo | Code-breaking puzzle with exact and color-only feedback |
 
 ## Planned Game Candidates
 
@@ -61,7 +62,6 @@ These fit the same compact, replayable, mostly turn-based direction:
 - Pentago
 - Quarto
 - Quoridor
-- Mastermind
 - Minesweeper
 - Kakuro
 - Set
