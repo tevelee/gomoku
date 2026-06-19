@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor as pieceColor } from '../shared/colors.js'
 import { incrementPlayerScore } from '../shared/runtime.js'
-import { computeAtaxxMove } from './ai.js'
+import { runAiTask } from '../shared/aiTasks.js'
 import {
   SIZE,
   P1,
@@ -89,28 +89,37 @@ const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, on
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 650 : diffRef.current === 'hard' ? 520 : diffRef.current === 'medium' ? 420 : 320
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        const move = computeAtaxxMove(s.board, s.current, diffRef.current)
-        if (!move) {
-          const turn = passTurn(s.board, s.current)
-          return {
-            ...s,
-            current: turn.current,
-            winner: turn.winner,
-            passed: turn.passed,
-            busy: false,
-            scores: incrementPlayerScore(s.scores, turn.winner),
-            selected: -1,
+      task = runAiTask('ataxx', 'computeAtaxxMove', [gs.board, gs.current, diffRef.current])
+      task.promise.then(move => {
+        setGs(s => {
+          if (!s.busy) return s
+          if (!move) {
+            const turn = passTurn(s.board, s.current)
+            return {
+              ...s,
+              current: turn.current,
+              winner: turn.winner,
+              passed: turn.passed,
+              busy: false,
+              scores: incrementPlayerScore(s.scores, turn.winner),
+              selected: -1,
+            }
           }
-        }
-        const { board, converted } = applyMove(s.board, move, s.current)
-        return finalizeTurn(s, board, move, converted, s.current, modeRef.current === 'pvp')
+          const { board, converted } = applyMove(s.board, move, s.current)
+          return finalizeTurn(s, board, move, converted, s.current, modeRef.current === 'pvp')
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.current, gs.lastMove?.to, gs.passed])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.current, gs.lastMove?.to, gs.passed, gs.board])
 
   function handleCellClick(cellIdx) {
     const { board, current, selected, winner, busy } = gs

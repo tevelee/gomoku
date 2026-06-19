@@ -1250,6 +1250,12 @@ body {
   58%  { transform: scale(0.72); opacity: 0.5; }
   100% { transform: scale(0.38); opacity: 0; }
 }
+@keyframes morris-mill-flash {
+  0%   { transform: scale(0.72); opacity: 0; }
+  18%  { transform: scale(1.08); opacity: 1; }
+  62%  { transform: scale(1);    opacity: 0.88; }
+  100% { transform: scale(1.28); opacity: 0; }
+}
 
 .morris-piece-g,
 .morris-place-piece,
@@ -1264,6 +1270,13 @@ body {
   animation: piece-slide 220ms ease-out;
 }
 .morris-hint-ring { pointer-events: none; }
+.morris-closed-mill {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: morris-mill-flash 980ms ease-out forwards;
+  pointer-events: none;
+}
 .morris-ripple {
   transform-box: fill-box;
   transform-origin: center;
@@ -1480,6 +1493,7 @@ body {
 .sudoku-board {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
   width: min(76vh, 560px, calc(100vw - 286px));
   aspect-ratio: 1;
   overflow: hidden;
@@ -1675,27 +1689,47 @@ body {
   min-height: 0;
 }
 
+.nonogram-board-viewport {
+  display: grid;
+  place-items: center;
+  width: min(80vh, 760px, calc(100vw - 286px));
+  aspect-ratio: 1;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
 .nonogram-frame {
   display: grid;
   grid-template-columns: var(--nonogram-clue-size) minmax(0, 1fr);
   grid-template-rows: var(--nonogram-clue-size) minmax(0, 1fr);
-  width: min(80vh, 760px, calc(100vw - 286px));
+  width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
   background: #30363d;
   border: 3px solid #6e7681;
   border-radius: var(--radius);
   box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.nonogram-frame.mirrored {
+  grid-template-columns: var(--nonogram-clue-size) minmax(0, 1fr) var(--nonogram-clue-size);
+  grid-template-rows: var(--nonogram-clue-size) minmax(0, 1fr) var(--nonogram-clue-size);
 }
 
 .nonogram-frame.size-15,
-.nonogram-frame.size-20 {
+.nonogram-frame.size-20,
+.nonogram-frame.size-25 {
   font-size: 0.84rem;
 }
 
 .nonogram-corner,
 .nonogram-top-clue,
-.nonogram-left-clue {
+.nonogram-bottom-clue,
+.nonogram-left-clue,
+.nonogram-right-clue {
   min-width: 0;
   min-height: 0;
   color: #c9d1d9;
@@ -1715,24 +1749,32 @@ body {
   text-align: center;
   text-transform: capitalize;
 }
+.nonogram-corner.secondary {
+  background: #141d25;
+}
 
 .nonogram-top-clues,
+.nonogram-bottom-clues,
 .nonogram-left-clues,
+.nonogram-right-clues,
 .nonogram-grid {
   display: grid;
   min-width: 0;
   min-height: 0;
 }
 
-.nonogram-top-clues {
+.nonogram-top-clues,
+.nonogram-bottom-clues {
   grid-template-columns: repeat(var(--nonogram-size), minmax(0, 1fr));
 }
 
-.nonogram-left-clues {
+.nonogram-left-clues,
+.nonogram-right-clues {
   grid-template-rows: repeat(var(--nonogram-size), minmax(0, 1fr));
 }
 
-.nonogram-top-clue {
+.nonogram-top-clue,
+.nonogram-bottom-clue {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1741,8 +1783,13 @@ body {
   padding: 4px 1px;
   font-size: 0.72em;
 }
+.nonogram-bottom-clue {
+  justify-content: flex-start;
+  border-top: 1px solid #30363d;
+}
 
-.nonogram-left-clue {
+.nonogram-left-clue,
+.nonogram-right-clue {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1750,15 +1797,23 @@ body {
   padding: 1px 6px;
   font-size: 0.78em;
 }
+.nonogram-right-clue {
+  justify-content: flex-start;
+  border-left: 1px solid #30363d;
+}
 
 .nonogram-top-clue.active,
-.nonogram-left-clue.active {
+.nonogram-bottom-clue.active,
+.nonogram-left-clue.active,
+.nonogram-right-clue.active {
   color: #ffffff;
   background: #203247;
 }
 
 .nonogram-top-clue.complete,
-.nonogram-left-clue.complete {
+.nonogram-bottom-clue.complete,
+.nonogram-left-clue.complete,
+.nonogram-right-clue.complete {
   color: var(--win);
 }
 
@@ -1785,6 +1840,7 @@ body {
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+  touch-action: none;
   outline: none;
   transition: background 0.12s, color 0.12s, box-shadow 0.12s, transform 0.08s;
 }
@@ -1827,13 +1883,15 @@ body {
 }
 
 .nonogram-cell.major-right,
-.nonogram-top-clue.major-right {
+.nonogram-top-clue.major-right,
+.nonogram-bottom-clue.major-right {
   border-right-color: #6e7681;
   border-right-width: 2px;
 }
 
 .nonogram-cell.major-bottom,
-.nonogram-left-clue.major-bottom {
+.nonogram-left-clue.major-bottom,
+.nonogram-right-clue.major-bottom {
   border-bottom-color: #6e7681;
   border-bottom-width: 2px;
 }
@@ -1920,6 +1978,29 @@ body {
   opacity: 0.58;
 }
 
+.nonogram-switches {
+  display: grid;
+  gap: 8px;
+}
+
+.nonogram-switches label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 9px;
+  color: #c9d1d9;
+  background: #161b22;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.nonogram-switches input {
+  accent-color: var(--p1);
+}
+
 /* ── Block Puzzle ───────────────────────────────────────────────────────── */
 .block-puzzle-game {
   position: relative;
@@ -1939,7 +2020,7 @@ body {
 
 .block-puzzle-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   align-items: center;
   justify-items: center;
   gap: 12px;
@@ -1984,11 +2065,109 @@ body {
   font-weight: 750;
 }
 
+.block-puzzle-settings {
+  width: min(100%, 620px);
+  color: #c9d1d9;
+  background: #17131a;
+  border: 1px solid #463747;
+  border-radius: var(--radius);
+}
+
+.block-puzzle-settings summary {
+  min-height: 34px;
+  padding: 8px 10px;
+  color: #f5d56b;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+  outline: none;
+}
+
+.block-puzzle-settings summary:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--p1);
+}
+
+.block-puzzle-settings-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+.block-puzzle-setting-group {
+  display: grid;
+  gap: 7px;
+}
+
+.block-puzzle-setting-group > span {
+  color: #8b949e;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.block-puzzle-size-options,
+.block-puzzle-shape-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.block-puzzle-size-options button,
+.block-puzzle-shape-options button {
+  min-width: 0;
+  color: #c9d1d9;
+  background: #211a24;
+  border: 1px solid #342734;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+}
+
+.block-puzzle-size-options button {
+  height: 30px;
+  padding: 0 9px;
+}
+
+.block-puzzle-shape-options button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+}
+
+.block-puzzle-size-options button.active,
+.block-puzzle-shape-options button.active,
+.block-puzzle-size-options button:focus-visible,
+.block-puzzle-shape-options button:focus-visible {
+  color: #f5d56b;
+  border-color: #f5d56b;
+  background: #2a2130;
+}
+
+.block-puzzle-shape-options .block-puzzle-piece {
+  --piece-cell: 7px;
+  gap: 1px;
+}
+
+.block-puzzle-shape-options .block-puzzle-piece-cell,
+.block-puzzle-shape-options .block-puzzle-piece-space {
+  width: var(--piece-cell);
+  height: var(--piece-cell);
+  border-width: 1px;
+  border-radius: 2px;
+}
+
 .block-puzzle-board-wrap {
   display: grid;
   place-items: center;
   width: 100%;
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .block-puzzle-board {
@@ -1997,6 +2176,7 @@ body {
   grid-template-rows: repeat(var(--block-board-size), minmax(0, 1fr));
   gap: 2px;
   width: min(100%, 54vh, 600px);
+  height: min(100%, 54vh, 600px);
   aspect-ratio: 1;
   min-width: 0;
   min-height: 0;
@@ -2448,6 +2628,7 @@ body {
   .block-puzzle-scoreboard span { font-size: 0.62rem; }
   .block-puzzle-board {
     width: min(100%, 50vh);
+    height: min(100%, 50vh);
     padding: 5px;
     gap: 1px;
   }
@@ -2566,7 +2747,7 @@ body {
     max-width: 620px;
   }
 
-  .nonogram-frame {
+  .nonogram-board-viewport {
     width: min(100%, 62vh);
     justify-self: center;
   }
@@ -2596,6 +2777,7 @@ body {
 
   .block-puzzle-board {
     width: min(100%, 50vh);
+    height: min(100%, 50vh);
   }
 }
 

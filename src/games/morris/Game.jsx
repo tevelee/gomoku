@@ -2,12 +2,12 @@ import { useState, useRef, useEffect, forwardRef } from 'react'
 import {
   P1, P2,
   NODE_POS, EDGES, ADJACENCY, MILLS,
-  detectMill, getRemovable, getValidPlacements, getValidMoveActions, checkWin,
+  getRemovable, getValidPlacements, getValidMoveActions, checkWin,
 } from './logic.js'
-import { computeMorrisMove } from './ai.js'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor as pieceColor } from '../shared/colors.js'
 import { incrementPlayerScore } from '../shared/runtime.js'
+import { runAiTask } from '../shared/aiTasks.js'
 
 function makeInitialState() {
   return {
@@ -19,6 +19,7 @@ function makeInitialState() {
     mustRemove: false,
     winner:     null,
     winMill:    null,
+    closedMill: null,
     busy:       false,
     scores:     { p1: 0, p2: 0 },
     lastNode:   -1,
@@ -31,6 +32,10 @@ function makeInitialState() {
 
 function findWinMill(cells, player) {
   return MILLS.find(m => m.every(n => cells[n] === player)) ?? null
+}
+
+function findClosedMill(cells, node, player) {
+  return MILLS.find(m => m.includes(node) && m.every(n => cells[n] === player)) ?? null
 }
 
 const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateChange }, ref) {
@@ -46,32 +51,38 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 700 : diffRef.current === 'medium' ? 500 : 400
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        return computeAndApplyAITurn(s, diffRef.current)
+      task = runAiTask('morris', 'computeMorrisMove', [gs, diffRef.current])
+      task.promise.then(action => {
+        setGs(s => {
+          if (!s.busy) return s
+          return applyAIAction(s, action)
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.mustRemove])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.mustRemove, gs.cells, gs.current])
 
   // ── Game logic helpers ──────────────────────────────────────────────────────
 
-  function computeAndApplyAITurn(s, diff) {
+  function applyAIAction(s, action) {
     if (s.mustRemove) {
       // AI picks which opponent piece to remove
-      const action = computeMorrisMove(s, diff)
-      return applyRemoval(s, action.node)
+      return applyRemoval(s, action?.node ?? null)
     }
 
-    const action = computeMorrisMove(s, diff)
     if (!action) return { ...s, busy: false }
 
     let next = applyPlaceOrMove(s, action)
     if (next.mustRemove) {
-      // AI immediately picks removal too
-      const removeAction = computeMorrisMove(next, diff)
-      next = applyRemoval(next, removeAction.node)
+      return { ...next, busy: true }
     }
     return next
   }
@@ -103,13 +114,13 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
       to: placedAt,
       player: current,
     }
-    const mill     = detectMill(newCells, placedAt, current)
+    const mill     = findClosedMill(newCells, placedAt, current)
 
     if (mill && getRemovable(newCells, current).length > 0) {
       return {
         ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
         mustRemove: true, lastNode: placedAt, movingFrom, busy: false, removedPiece: null,
-        lastAction, animationId,
+        closedMill: mill, lastAction, animationId,
       }
     }
 
@@ -118,7 +129,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
       return {
         ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
         winner: current, winMill: findWinMill(newCells, current), lastNode: placedAt,
-        movingFrom, busy: false, selected: -1, removedPiece: null,
+        closedMill: mill, movingFrom, busy: false, selected: -1, removedPiece: null,
         lastAction, animationId,
         scores: incrementPlayerScore(scores, current),
       }
@@ -128,7 +139,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
     return {
       ...s, cells: newCells, inHand: newInHand, onBoard: newOnBoard,
       current: opp, selected: -1, lastNode: placedAt, movingFrom, busy: needsAI, mustRemove: false, removedPiece: null,
-      lastAction, animationId,
+      closedMill: mill, lastAction, animationId,
     }
   }
 
@@ -142,6 +153,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
           ...s,
           winner: current, winMill: findWinMill(cells, current),
           mustRemove: false, busy: false, selected: -1, movingFrom: -1, removedPiece: null,
+          closedMill: s.closedMill,
           scores: incrementPlayerScore(scores, current),
         }
       }
@@ -150,6 +162,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
       return {
         ...s,
         current: opp, mustRemove: false, busy: needsAI, selected: -1, movingFrom: -1, removedPiece: null,
+        closedMill: s.closedMill,
       }
     }
 
@@ -165,7 +178,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
         ...s, cells: newCells, onBoard: newOnBoard,
         winner: current, winMill: findWinMill(newCells, current),
         mustRemove: false, busy: false, movingFrom: -1,
-        removedPiece, animationId,
+        closedMill: s.closedMill, removedPiece, animationId,
         scores: incrementPlayerScore(scores, current),
       }
     }
@@ -174,7 +187,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
     return {
       ...s, cells: newCells, onBoard: newOnBoard,
       current: opp, mustRemove: false, busy: needsAI, movingFrom: -1,
-      removedPiece, animationId,
+      closedMill: s.closedMill, removedPiece, animationId,
     }
   }
 
@@ -226,7 +239,7 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
 
   // ── Derived rendering data ──────────────────────────────────────────────────
 
-  const { cells, inHand, onBoard, current, selected, mustRemove, winner, busy, lastNode, winMill, removedPiece, lastAction } = gs
+  const { cells, inHand, onBoard, current, selected, mustRemove, winner, busy, lastNode, winMill, closedMill, removedPiece, lastAction } = gs
   const pvp    = mode === 'pvp'
   const flying = !winner && !mustRemove && inHand[current] === 0 && onBoard[current] === 3
 
@@ -271,6 +284,14 @@ const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateCha
         <circle key={i}
           cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={22}
           fill="none" stroke="#e3b341" strokeWidth="3" opacity="0.8" />
+      ))}
+
+      {/* Recently closed mill highlight */}
+      {closedMill && closedMill.map((n, i) => (
+        <circle key={`closed-${lastAction?.id ?? 0}-${i}`}
+          className="morris-closed-mill"
+          cx={NODE_POS[n][0]} cy={NODE_POS[n][1]} r={25}
+          fill="none" stroke="#f0d66f" strokeWidth="4" />
       ))}
 
       {/* Valid placement / move targets */}

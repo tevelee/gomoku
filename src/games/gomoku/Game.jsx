@@ -1,7 +1,7 @@
 import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { HUMAN, BOT, detectWin } from './logic.js'
-import { computeAIMove } from './ai.js'
 import { P1_COLOR, P2_COLOR, hexToRgbParts } from '../shared/colors.js'
+import { runAiTask } from '../shared/aiTasks.js'
 
 const BASE_CELL = 44
 
@@ -33,6 +33,7 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
   // Undo state
   const historyRef  = useRef([])
   const botTimerRef = useRef(null)
+  const botTaskRef  = useRef(null)
   const undoRef     = useRef(null)
 
   // Live prop refs so event-handler closures always read current values
@@ -47,6 +48,8 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
     reset() {
       historyRef.current = []
       if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
+      botTaskRef.current?.cancel()
+      botTaskRef.current = null
       board.current.clear()
       current.current   = HUMAN
       winner.current    = null
@@ -98,6 +101,8 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
 
     function undo() {
       if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
+      botTaskRef.current?.cancel()
+      botTaskRef.current = null
       const prev = historyRef.current.pop()
       if (!prev) return
       board.current    = prev.board
@@ -187,14 +192,26 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
       const delay = diffRef.current === 'expert' ? 80 : 30
       botTimerRef.current = setTimeout(() => {
         botTimerRef.current = null
-        const move = computeAIMove(board.current, diffRef.current)
-        place(move.x, move.y)
-        busy.current = false
-        const key = `${move.x},${move.y}`
-        pieceAnims.current.set(key, { start: performance.now() })
-        ensureVisible(move.x, move.y)
-        startRaf()
-        pushState()
+        const task = runAiTask('gomoku', 'computeAIMove', [new Map(board.current), diffRef.current])
+        botTaskRef.current = task
+        task.promise.then(move => {
+          if (botTaskRef.current !== task) return
+          botTaskRef.current = null
+          if (!busy.current || winner.current || current.current !== BOT || !move) return
+          place(move.x, move.y)
+          busy.current = false
+          const key = `${move.x},${move.y}`
+          pieceAnims.current.set(key, { start: performance.now() })
+          ensureVisible(move.x, move.y)
+          startRaf()
+          pushState()
+        }).catch(error => {
+          if (botTaskRef.current !== task) return
+          botTaskRef.current = null
+          busy.current = false
+          pushState()
+          console.error(error)
+        })
       }, delay)
     }
 
@@ -499,6 +516,8 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
     return () => {
       ro.disconnect()
       if (botTimerRef.current) { clearTimeout(botTimerRef.current); botTimerRef.current = null }
+      botTaskRef.current?.cancel()
+      botTaskRef.current = null
       if (rafId.current) cancelAnimationFrame(rafId.current)
       canvas.removeEventListener('mousedown',  onMouseDown)
       window.removeEventListener('mousemove',  onWindowMouseMove)

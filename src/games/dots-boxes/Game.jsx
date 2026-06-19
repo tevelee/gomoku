@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, forwardRef } from 'react'
 import { DRAW } from '../shared/runtime.js'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
-import { computeDotsMove } from './ai.js'
+import { runAiTask } from '../shared/aiTasks.js'
 import {
   P1,
   P2,
@@ -71,16 +71,25 @@ const DotsBoxesGame = forwardRef(function DotsBoxesGame({ mode, difficulty, sett
           : diffRef.current === 'medium'
             ? 420
             : 300
+    let task = null
     const timer = setTimeout(() => {
-      setGs(state => {
-        if (!state.busy) return state
-        const key = computeDotsMove(state, state.current, diffRef.current)
-        if (!key) return { ...state, winner: DRAW, busy: false }
-        return finishMove(state, key, modeRef.current === 'pvp')
+      task = runAiTask('dots-boxes', 'computeDotsMove', [gs, gs.current, diffRef.current])
+      task.promise.then(key => {
+        setGs(state => {
+          if (!state.busy) return state
+          if (!key) return { ...state, winner: DRAW, busy: false }
+          return finishMove(state, key, modeRef.current === 'pvp')
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(state => state.busy ? { ...state, busy: false } : state)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.current, gs.size, gs.lastMove?.key, gs.completed.length])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.current, gs.size, gs.lastMove?.key, gs.completed.length, gs.edges])
 
   function handleEdgeClick(key) {
     const pvp = modeRef.current === 'pvp'

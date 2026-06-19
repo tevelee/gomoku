@@ -176,6 +176,7 @@ export const playableGames = [
           { value: '12', label: '12x12' },
           { value: '15', label: '15x15' },
           { value: '20', label: '20x20' },
+          { value: '25', label: '25x25' },
         ],
       },
     ],

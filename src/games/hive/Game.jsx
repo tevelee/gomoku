@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
-import { computeHiveMove } from './ai.js'
+import { runAiTask } from '../shared/aiTasks.js'
 import {
   ANT,
   BEETLE,
@@ -422,30 +422,39 @@ const HiveGame = forwardRef(function HiveGame({ mode, difficulty, onStateChange 
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 700 : diffRef.current === 'hard' ? 560 : diffRef.current === 'medium' ? 450 : 320
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        const context = getMoveContext(s)
-        const move = computeHiveMove(s.pieces, s.current, diffRef.current, context)
-        if (!move) {
-          const next = opponent(s.current)
-          const bothBlocked = getAllLegalMoves(s.pieces, next).length === 0
-          return {
-            ...s,
-            current: next,
-            winner: bothBlocked ? DRAW : null,
-            passed: true,
-            busy: false,
-            selected: null,
-            pillbugLockedId: null,
+      const context = getMoveContext(gs)
+      task = runAiTask('hive', 'computeHiveMove', [gs.pieces, gs.current, diffRef.current, context])
+      task.promise.then(move => {
+        setGs(s => {
+          if (!s.busy) return s
+          if (!move) {
+            const next = opponent(s.current)
+            const bothBlocked = getAllLegalMoves(s.pieces, next).length === 0
+            return {
+              ...s,
+              current: next,
+              winner: bothBlocked ? DRAW : null,
+              passed: true,
+              busy: false,
+              selected: null,
+              pillbugLockedId: null,
+            }
           }
-        }
-        const result = applyMove(s.pieces, move, s.current)
-        return finishTurn(s, result.pieces, s.current, move, result, modeRef.current === 'pvp')
+          const result = applyMove(s.pieces, move, s.current)
+          return finishTurn(s, result.pieces, s.current, move, result, modeRef.current === 'pvp')
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.current, gs.pieces, diffRef, modeRef])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.current, gs.pieces, gs.lastMove, gs.pillbugLockedId])
 
   const pvp = mode === 'pvp'
   const humanTurn = !gs.winner && !gs.busy && (pvp || gs.current === P1)
@@ -505,6 +514,10 @@ const HiveGame = forwardRef(function HiveGame({ mode, difficulty, onStateChange 
   }
 
   const { p1, p2 } = countPieces(gs.pieces)
+  const p1Inventory = getInventory(gs.pieces, P1)
+  const p2Inventory = getInventory(gs.pieces, P2)
+  const p1Hand = Object.values(p1Inventory).reduce((total, count) => total + count, 0)
+  const p2Hand = Object.values(p2Inventory).reduce((total, count) => total + count, 0)
   const p1Queen = getQueen(gs.pieces, P1)
   const p2Queen = getQueen(gs.pieces, P2)
   const p1Pressure = getQueenPressure(gs.pieces, P1)
@@ -657,12 +670,16 @@ const HiveGame = forwardRef(function HiveGame({ mode, difficulty, onStateChange 
 
       <rect x="0" y={layout.viewH - layout.footerH} width={layout.viewW} height={layout.footerH} fill="#0d1117" stroke="#30363d" />
       <circle cx="28" cy={layout.viewH - 20} r="8" fill={P1_COLOR} />
-      <text x="44" y={layout.viewH - 15} fill={P1_COLOR} fontFamily={FONT} fontSize="13" fontWeight="900">{p1}</text>
+      <text x="44" y={layout.viewH - 15} fill={P1_COLOR} fontFamily={FONT} fontSize="13" fontWeight="900">
+        {`board ${p1} · hand ${p1Hand}`}
+      </text>
       <text x={layout.viewW / 2} y={layout.viewH - 15} fill="#8b949e" fontFamily={FONT} fontSize="12" fontWeight="800" textAnchor="middle">
         {selectedMoves.length ? `${selectedMoves.length} targets` : PIECE_NAMES[gs.selected?.type] ?? statusCopy}
       </text>
-      <circle cx={layout.viewW - 48} cy={layout.viewH - 20} r="8" fill={P2_COLOR} />
-      <text x={layout.viewW - 32} y={layout.viewH - 15} fill={P2_COLOR} fontFamily={FONT} fontSize="13" fontWeight="900" textAnchor="start">{p2}</text>
+      <circle cx={layout.viewW - 186} cy={layout.viewH - 20} r="8" fill={P2_COLOR} />
+      <text x={layout.viewW - 170} y={layout.viewH - 15} fill={P2_COLOR} fontFamily={FONT} fontSize="13" fontWeight="900" textAnchor="start">
+        {`board ${p2} · hand ${p2Hand}`}
+      </text>
     </svg>
   )
 })

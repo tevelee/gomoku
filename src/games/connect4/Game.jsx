@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, forwardRef } from 'react'
 import { ROWS, COLS, P1, P2, makeBoard, dropPiece, getValidCols, checkWinAt, getWinLine, isBoardFull } from './logic.js'
-import { computeConnect4Move } from './ai.js'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { incrementPlayerScore } from '../shared/runtime.js'
 import { playerColor } from '../shared/colors.js'
+import { runAiTask } from '../shared/aiTasks.js'
 
 const CELL = 60, R = 24
 const W = COLS * CELL          // 420
@@ -51,16 +51,25 @@ const Connect4Game = forwardRef(function Connect4Game({ mode, difficulty, onStat
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 900 : diffRef.current === 'hard' ? 700 : diffRef.current === 'medium' ? 500 : 400
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        const col = computeConnect4Move(s.board, s.current, diffRef.current)
-        if (col == null) return { ...s, winner: 'draw', busy: false }
-        return applyDrop(s, col)
+      task = runAiTask('connect4', 'computeConnect4Move', [gs.board, gs.current, diffRef.current])
+      task.promise.then(col => {
+        setGs(s => {
+          if (!s.busy) return s
+          if (col == null) return { ...s, winner: 'draw', busy: false }
+          return applyDrop(s, col)
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.board, gs.current])
 
   function applyDrop(s, col) {
     const { board, current, scores } = s

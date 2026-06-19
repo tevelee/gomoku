@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
 import { incrementPlayerScore } from '../shared/runtime.js'
-import { computeCheckersMove } from './ai.js'
+import { runAiTask } from '../shared/aiTasks.js'
 import {
   SIZE,
   P1,
@@ -121,19 +121,28 @@ const CheckersGame = forwardRef(function CheckersGame({ mode, difficulty, onStat
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 620 : diffRef.current === 'hard' ? 500 : diffRef.current === 'medium' ? 420 : 320
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        const move = computeCheckersMove(s.board, s.current, diffRef.current, s.forcedFrom)
-        if (!move) {
-          const winner = getWinner(s.board)
-          return { ...s, winner, scores: incrementPlayerScore(s.scores, winner), busy: false, selected: -1, forcedFrom: -1 }
-        }
-        return finishMove(s, move, modeRef.current === 'pvp')
+      task = runAiTask('checkers', 'computeCheckersMove', [gs.board, gs.current, diffRef.current, gs.forcedFrom])
+      task.promise.then(move => {
+        setGs(s => {
+          if (!s.busy) return s
+          if (!move) {
+            const winner = getWinner(s.board)
+            return { ...s, winner, scores: incrementPlayerScore(s.scores, winner), busy: false, selected: -1, forcedFrom: -1 }
+          }
+          return finishMove(s, move, modeRef.current === 'pvp')
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false, selected: -1 } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.forcedFrom])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.board, gs.current, gs.forcedFrom])
 
   function handleCellClick(cellIdx) {
     const { board, current, selected, forcedFrom, winner, busy } = gs

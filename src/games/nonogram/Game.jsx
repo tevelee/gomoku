@@ -6,6 +6,7 @@ import {
   P1,
   TOOLS,
   applyTool,
+  autoMarkSolvedLines,
   colOf,
   countIncorrectFilled,
   countMarked,
@@ -16,6 +17,7 @@ import {
   moveSelection,
   normalizeDifficulty,
   normalizeSize,
+  rememberSolvedPicture,
   revealCell,
   rowOf,
   selectCell,
@@ -36,8 +38,16 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
   const boardSize = normalizeSize(settings?.boardSize)
   const activeDifficulty = normalizeDifficulty(difficulty)
   const [gs, setGs] = useState(() => makeState(boardSize, activeDifficulty))
+  const [autoMark, setAutoMark] = useState(false)
+  const [mirrorGuides, setMirrorGuides] = useState(false)
+  const [view, setView] = useState({ scale: 1, x: 0, y: 0 })
   const historyRef = useRef([])
   const rootRef = useRef(null)
+  const viewportRef = useRef(null)
+  const gsRef = useRef(gs)
+  const viewRef = useRef(view)
+  const pointersRef = useRef(new Map())
+  const gestureRef = useRef(null)
 
   useGameSync({
     ref,
@@ -56,10 +66,27 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
   }, [])
 
   useEffect(() => {
+    gsRef.current = gs
+  }, [gs])
+
+  useEffect(() => {
+    viewRef.current = view
+  }, [view])
+
+  useEffect(() => {
     if (gs.size === boardSize && gs.difficulty === activeDifficulty) return
     historyRef.current = []
     setGs(makeState(boardSize, activeDifficulty))
+    setView({ scale: 1, x: 0, y: 0 })
   }, [boardSize, activeDifficulty, gs.size, gs.difficulty])
+
+  useEffect(() => {
+    if (autoMark) setGs(state => autoMarkSolvedLines(state))
+  }, [autoMark])
+
+  useEffect(() => {
+    if (gs.winner === P1) rememberSolvedPicture(gs)
+  }, [gs.winner, gs.fingerprint])
 
   const selectedRow = rowOf(gs.size, gs.selected)
   const selectedCol = colOf(gs.size, gs.selected)
@@ -75,10 +102,15 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
     [gs]
   )
 
+  function prepareNext(next) {
+    return autoMark ? autoMarkSolvedLines(next) : next
+  }
+
   function commit(next) {
     if (next === gs) return
-    if (didBoardChange(gs, next)) historyRef.current.push(gs)
-    setGs(next)
+    const prepared = prepareNext(next)
+    if (didBoardChange(gs, prepared)) historyRef.current.push(gs)
+    setGs(prepared)
   }
 
   function handleCell(index, tool = gs.tool) {
@@ -87,6 +119,166 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
 
   function handleHint() {
     commit(revealCell(gs))
+  }
+
+  function applyInteractionCell(index, tool) {
+    const gesture = gestureRef.current
+    if (gesture?.visited?.has(index)) return
+    gesture?.visited?.add(index)
+
+    setGs(current => {
+      const next = prepareWithAutoMark(applyTool(current, index, tool))
+      if (next === current) return current
+      if (didBoardChange(current, next) && gesture && !gesture.historyPushed) {
+        historyRef.current.push(current)
+        gesture.historyPushed = true
+      }
+      return next
+    })
+  }
+
+  function prepareWithAutoMark(next) {
+    return autoMark ? autoMarkSolvedLines(next) : next
+  }
+
+  function cellIndexFromTarget(target) {
+    const cell = target?.closest?.('[data-nonogram-index]')
+    const index = Number(cell?.dataset?.nonogramIndex)
+    return Number.isInteger(index) ? index : -1
+  }
+
+  function cellIndexAt(clientX, clientY) {
+    return cellIndexFromTarget(document.elementFromPoint(clientX, clientY))
+  }
+
+  function clampView(next) {
+    const scale = Math.max(1, Math.min(3, next.scale))
+    const maxOffset = 220 * (scale - 1)
+    return {
+      scale,
+      x: Math.max(-maxOffset, Math.min(maxOffset, next.x)),
+      y: Math.max(-maxOffset, Math.min(maxOffset, next.y)),
+    }
+  }
+
+  function updatePointer(event) {
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  }
+
+  function beginPinchIfNeeded() {
+    const pointers = [...pointersRef.current.values()]
+    if (pointers.length < 2) return false
+    const [a, b] = pointers
+    gestureRef.current = {
+      type: 'pinch',
+      startDistance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      startView: viewRef.current,
+    }
+    return true
+  }
+
+  function handlePointerDown(event) {
+    if (event.button > 1 || gsRef.current.winner) return
+    event.preventDefault()
+    rootRef.current?.focus()
+    viewportRef.current?.setPointerCapture?.(event.pointerId)
+    updatePointer(event)
+
+    if (beginPinchIfNeeded()) return
+
+    const index = cellIndexFromTarget(event.target)
+    const zoomed = viewRef.current.scale > 1.02
+    if (index >= 0 && !zoomed) {
+      const tool = event.button === 2 ? TOOLS.mark : gsRef.current.tool
+      gestureRef.current = {
+        type: 'stroke',
+        pointerId: event.pointerId,
+        tool,
+        visited: new Set(),
+        historyPushed: false,
+      }
+      applyInteractionCell(index, tool)
+      return
+    }
+
+    gestureRef.current = {
+      type: 'pan',
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startView: viewRef.current,
+      tapIndex: index,
+      moved: false,
+    }
+  }
+
+  function handlePointerMove(event) {
+    if (!pointersRef.current.has(event.pointerId)) return
+    event.preventDefault()
+    updatePointer(event)
+    const gesture = gestureRef.current
+    if (!gesture) return
+
+    if (gesture.type === 'pinch') {
+      const pointers = [...pointersRef.current.values()]
+      if (pointers.length < 2) return
+      const [a, b] = pointers
+      const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      setView(clampView({
+        scale: gesture.startView.scale * distance / gesture.startDistance,
+        x: gesture.startView.x + (mid.x - gesture.startMid.x),
+        y: gesture.startView.y + (mid.y - gesture.startMid.y),
+      }))
+      return
+    }
+
+    if (gesture.type === 'stroke' && gesture.pointerId === event.pointerId) {
+      const index = cellIndexAt(event.clientX, event.clientY)
+      if (index >= 0) applyInteractionCell(index, gesture.tool)
+      return
+    }
+
+    if (gesture.type === 'pan' && gesture.pointerId === event.pointerId) {
+      const dx = event.clientX - gesture.startX
+      const dy = event.clientY - gesture.startY
+      if (Math.hypot(dx, dy) > 5) gesture.moved = true
+      if (viewRef.current.scale > 1.02) {
+        setView(clampView({
+          scale: gesture.startView.scale,
+          x: gesture.startView.x + dx,
+          y: gesture.startView.y + dy,
+        }))
+      }
+    }
+  }
+
+  function handlePointerEnd(event) {
+    const gesture = gestureRef.current
+    pointersRef.current.delete(event.pointerId)
+
+    if (gesture?.type === 'pan' && gesture.pointerId === event.pointerId && !gesture.moved && gesture.tapIndex >= 0) {
+      gestureRef.current = {
+        type: 'tap',
+        visited: new Set(),
+        historyPushed: false,
+      }
+      applyInteractionCell(gesture.tapIndex, gsRef.current.tool)
+    }
+
+    if (pointersRef.current.size >= 2) beginPinchIfNeeded()
+    else gestureRef.current = null
+  }
+
+  function handleWheel(event) {
+    if (!event.ctrlKey && !event.metaKey) return
+    event.preventDefault()
+    const factor = event.deltaY > 0 ? 0.9 : 1.1
+    setView(current => clampView({
+      ...current,
+      scale: current.scale * factor,
+    }))
   }
 
   function handleKeyDown(event) {
@@ -132,6 +324,7 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
   const boardStyle = {
     '--nonogram-size': gs.size,
     '--nonogram-clue-size': `${clueSize}px`,
+    transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
   }
 
   return (
@@ -143,86 +336,107 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
     >
       <div className="nonogram-shell">
         <div
-          className={`nonogram-frame size-${gs.size}`}
-          style={boardStyle}
-          aria-label={`${gs.size} by ${gs.size} nonogram`}
+          ref={viewportRef}
+          className="nonogram-board-viewport"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onWheel={handleWheel}
+          onContextMenu={event => event.preventDefault()}
         >
-          <div className="nonogram-corner">
-            {gs.winner === P1 ? gs.title : `${gs.size}x${gs.size}`}
-          </div>
+          <div
+            className={[
+              'nonogram-frame',
+              `size-${gs.size}`,
+              mirrorGuides && 'mirrored',
+            ].filter(Boolean).join(' ')}
+            style={boardStyle}
+            aria-label={`${gs.size} by ${gs.size} nonogram`}
+          >
+            <div className="nonogram-corner">
+              {gs.winner === P1 ? gs.title : `${gs.size}x${gs.size}`}
+            </div>
 
-          <div className="nonogram-top-clues" aria-hidden="true">
-            {gs.clues.cols.map((clues, col) => (
-              <div
-                key={col}
-                className={[
-                  'nonogram-top-clue',
-                  solvedColumns[col] && 'complete',
-                  selectedCol === col && 'active',
+            <ClueStrip
+              kind="top"
+              clues={gs.clues.cols}
+              solved={solvedColumns}
+              activeIndex={selectedCol}
+              size={gs.size}
+            />
+
+            {mirrorGuides && <div className="nonogram-corner secondary" aria-hidden="true" />}
+
+            <ClueStrip
+              kind="left"
+              clues={gs.clues.rows}
+              solved={solvedRows}
+              activeIndex={selectedRow}
+              size={gs.size}
+            />
+
+            <div className="nonogram-grid" role="grid">
+              {gs.cells.map((cell, index) => {
+                const row = rowOf(gs.size, index)
+                const col = colOf(gs.size, index)
+                const filled = cell === FILLED
+                const marked = cell === MARKED
+                const wrong = filled && !gs.solution[index]
+                const selected = index === gs.selected
+                const activeLine = row === selectedRow || col === selectedCol
+                const classes = [
+                  'nonogram-cell',
+                  filled && 'filled',
+                  marked && 'marked',
+                  wrong && 'wrong',
+                  selected && 'selected',
+                  activeLine && 'active-line',
                   isMajorAfter(col, gs.size) && 'major-right',
-                ].filter(Boolean).join(' ')}
-              >
-                {clues.map((clue, index) => <span key={`${clue}-${index}`}>{clue}</span>)}
-              </div>
-            ))}
-          </div>
-
-          <div className="nonogram-left-clues" aria-hidden="true">
-            {gs.clues.rows.map((clues, row) => (
-              <div
-                key={row}
-                className={[
-                  'nonogram-left-clue',
-                  solvedRows[row] && 'complete',
-                  selectedRow === row && 'active',
                   isMajorAfter(row, gs.size) && 'major-bottom',
-                ].filter(Boolean).join(' ')}
-              >
-                {clues.map((clue, index) => <span key={`${clue}-${index}`}>{clue}</span>)}
-              </div>
-            ))}
-          </div>
+                ].filter(Boolean).join(' ')
 
-          <div className="nonogram-grid" role="grid">
-            {gs.cells.map((cell, index) => {
-              const row = rowOf(gs.size, index)
-              const col = colOf(gs.size, index)
-              const filled = cell === FILLED
-              const marked = cell === MARKED
-              const wrong = filled && !gs.solution[index]
-              const selected = index === gs.selected
-              const activeLine = row === selectedRow || col === selectedCol
-              const classes = [
-                'nonogram-cell',
-                filled && 'filled',
-                marked && 'marked',
-                wrong && 'wrong',
-                selected && 'selected',
-                activeLine && 'active-line',
-                isMajorAfter(col, gs.size) && 'major-right',
-                isMajorAfter(row, gs.size) && 'major-bottom',
-              ].filter(Boolean).join(' ')
+                return (
+                  <button
+                    key={index}
+                    className={classes}
+                    data-nonogram-index={index}
+                    type="button"
+                    role="gridcell"
+                    aria-selected={selected}
+                    aria-label={`Row ${row + 1}, column ${col + 1}, ${filled ? 'filled' : marked ? 'marked' : 'empty'}`}
+                    disabled={Boolean(gs.winner)}
+                    onFocus={() => setGs(state => selectCell(state, index))}
+                  >
+                    <span aria-hidden="true">{marked ? 'x' : ''}</span>
+                  </button>
+                )
+              })}
+            </div>
 
-              return (
-                <button
-                  key={index}
-                  className={classes}
-                  type="button"
-                  role="gridcell"
-                  aria-selected={selected}
-                  aria-label={`Row ${row + 1}, column ${col + 1}, ${filled ? 'filled' : marked ? 'marked' : 'empty'}`}
-                  disabled={Boolean(gs.winner)}
-                  onClick={() => handleCell(index)}
-                  onContextMenu={event => {
-                    event.preventDefault()
-                    handleCell(index, TOOLS.mark)
-                  }}
-                  onFocus={() => setGs(state => selectCell(state, index))}
-                >
-                  <span aria-hidden="true">{marked ? 'x' : ''}</span>
-                </button>
-              )
-            })}
+            {mirrorGuides && (
+              <ClueStrip
+                kind="right"
+                clues={gs.clues.rows}
+                solved={solvedRows}
+                activeIndex={selectedRow}
+                size={gs.size}
+              />
+            )}
+
+            {mirrorGuides && <div className="nonogram-corner secondary" aria-hidden="true" />}
+
+            {mirrorGuides && (
+              <ClueStrip
+                kind="bottom"
+                clues={gs.clues.cols}
+                solved={solvedColumns}
+                activeIndex={selectedCol}
+                size={gs.size}
+              />
+            )}
+
+            {mirrorGuides && <div className="nonogram-corner secondary" aria-hidden="true" />}
           </div>
         </div>
 
@@ -268,6 +482,32 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
             </button>
           </div>
 
+          <div className="nonogram-switches">
+            <label>
+              <input
+                type="checkbox"
+                checked={autoMark}
+                onChange={event => setAutoMark(event.target.checked)}
+              />
+              <span>Auto-mark done lines</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={mirrorGuides}
+                onChange={event => setMirrorGuides(event.target.checked)}
+              />
+              <span>Guides on all sides</span>
+            </label>
+            <button
+              className="nonogram-tool"
+              type="button"
+              onClick={() => setView({ scale: 1, x: 0, y: 0 })}
+            >
+              Reset View
+            </button>
+          </div>
+
           <div className={`nonogram-picture${gs.winner === P1 ? ' solved' : ''}`}>
             <strong>{gs.winner === P1 ? gs.title : 'Mystery'}</strong>
             <span>{gs.difficulty}</span>
@@ -277,6 +517,30 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
     </div>
   )
 })
+
+function ClueStrip({ kind, clues, solved, activeIndex, size }) {
+  const horizontal = kind === 'top' || kind === 'bottom'
+  const className = `nonogram-${kind}-clues`
+  const itemClass = horizontal ? `nonogram-${kind}-clue` : `nonogram-${kind}-clue`
+
+  return (
+    <div className={className} aria-hidden="true">
+      {clues.map((line, index) => (
+        <div
+          key={index}
+          className={[
+            itemClass,
+            solved[index] && 'complete',
+            activeIndex === index && 'active',
+            isMajorAfter(index, size) && (horizontal ? 'major-right' : 'major-bottom'),
+          ].filter(Boolean).join(' ')}
+        >
+          {line.map((clue, clueIndex) => <span key={`${clue}-${clueIndex}`}>{clue}</span>)}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function isMajorAfter(index, size) {
   return (index + 1) % 5 === 0 && index !== size - 1

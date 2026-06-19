@@ -1,13 +1,19 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import {
-  SIZE,
+  BOARD_SIZES,
+  DEFAULT_ENABLED_SHAPES,
+  DEFAULT_SIZE,
+  SHAPE_OPTIONS,
+  SHAPES,
   canPlacePiece,
   colOf,
   getPieceBounds,
   getPlacementCells,
   makeState,
+  normalizeBoardSize,
   normalizeDifficulty,
+  normalizeEnabledShapeIds,
   placePiece,
   rowOf,
   selectPiece,
@@ -20,7 +26,11 @@ const DRAG_THRESHOLD = 5
 const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, onStateChange }, ref) {
   const activeDifficulty = normalizeDifficulty(difficulty)
   const bestRef = useRef(readStoredBest())
-  const [gs, setGs] = useState(() => makeState(activeDifficulty, bestRef.current))
+  const [puzzleSettings, setPuzzleSettings] = useState(() => ({
+    boardSize: DEFAULT_SIZE,
+    enabledShapeIds: DEFAULT_ENABLED_SHAPES,
+  }))
+  const [gs, setGs] = useState(() => makeState(activeDifficulty, bestRef.current, puzzleSettings))
   const historyRef = useRef([])
   const rootRef = useRef(null)
   const boardRef = useRef(null)
@@ -37,7 +47,7 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
     gs,
     setGs,
     historyRef,
-    makeInitial: () => makeState(activeDifficulty, bestRef.current),
+    makeInitial: () => makeState(activeDifficulty, bestRef.current, puzzleSettings),
     preserveScores: false,
   })
 
@@ -50,11 +60,15 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
   }, [])
 
   useEffect(() => {
-    if (gs.difficulty === activeDifficulty) return
+    if (
+      gs.difficulty === activeDifficulty &&
+      gs.size === puzzleSettings.boardSize &&
+      sameShapeIds(gs.enabledShapeIds, puzzleSettings.enabledShapeIds)
+    ) return
     historyRef.current = []
     setHover(null)
-    setGs(makeState(activeDifficulty, bestRef.current))
-  }, [activeDifficulty, gs.difficulty])
+    setGs(makeState(activeDifficulty, bestRef.current, puzzleSettings))
+  }, [activeDifficulty, puzzleSettings, gs.difficulty, gs.size, gs.enabledShapeIds])
 
   useEffect(() => {
     if (gs.best <= bestRef.current) return
@@ -132,13 +146,13 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
 
     const indexes = new Set()
     for (const row of rows) {
-      for (let col = 0; col < SIZE; col++) indexes.add(row * SIZE + col)
+      for (let col = 0; col < gs.size; col++) indexes.add(row * gs.size + col)
     }
     for (const col of cols) {
-      for (let row = 0; row < SIZE; row++) indexes.add(row * SIZE + col)
+      for (let row = 0; row < gs.size; row++) indexes.add(row * gs.size + col)
     }
     return indexes
-  }, [gs.lastMove])
+  }, [gs.lastMove, gs.size])
 
   function commitPlacement(trayIndex, row, col) {
     setGs(state => {
@@ -162,24 +176,47 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
     const rect = board.getBoundingClientRect()
     if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null
 
-    const cellSize = rect.width / SIZE
+    const cellSize = rect.width / state.size
     const row = Math.floor((clientY - rect.top) / cellSize) - dragInfo.offsetRow
     const col = Math.floor((clientX - rect.left) / cellSize) - dragInfo.offsetCol
     return getPlacementPreview(state, dragInfo.piece, dragInfo.trayIndex, row, col)
   }
 
   function getPlacementPreview(state, piece, trayIndex, row, col) {
-    const cells = getPlacementCells(piece, row, col)
-      .filter(cell => cell.row >= 0 && cell.row < SIZE && cell.col >= 0 && cell.col < SIZE)
+    const cells = getPlacementCells(piece, row, col, state.size)
+      .filter(cell => cell.row >= 0 && cell.row < state.size && cell.col >= 0 && cell.col < state.size)
       .map(cell => cell.index)
 
     return {
       trayIndex,
       row,
       col,
-      valid: canPlacePiece(state.board, piece, row, col),
+      valid: canPlacePiece(state.board, piece, row, col, state.size),
       cells,
     }
+  }
+
+  function handleBoardSizeChange(sizeValue) {
+    setPuzzleSettings(settings => ({
+      ...settings,
+      boardSize: normalizeBoardSize(sizeValue),
+    }))
+  }
+
+  function handleShapeToggle(shapeId) {
+    setPuzzleSettings(settings => {
+      const current = new Set(normalizeEnabledShapeIds(settings.enabledShapeIds))
+      if (current.has(shapeId)) {
+        if (current.size === 1) return settings
+        current.delete(shapeId)
+      } else {
+        current.add(shapeId)
+      }
+      return {
+        ...settings,
+        enabledShapeIds: [...current],
+      }
+    })
   }
 
   function handlePiecePointerDown(event, trayIndex) {
@@ -222,14 +259,14 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
       setHover(null)
       return
     }
-    setHover(getPlacementPreview(gs, piece, trayIndex, rowOf(index), colOf(index)))
+    setHover(getPlacementPreview(gs, piece, trayIndex, rowOf(index, gs.size), colOf(index, gs.size)))
   }
 
   function handleCellClick(index) {
     if (dragRef.current || gs.winner) return
     const trayIndex = gs.selectedPiece
     if (!gs.tray[trayIndex]) return
-    commitPlacement(trayIndex, rowOf(index), colOf(index))
+    commitPlacement(trayIndex, rowOf(index, gs.size), colOf(index, gs.size))
   }
 
   return (
@@ -259,13 +296,20 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
           </div>
         </div>
 
+        <BlockPuzzleSettingsPane
+          boardSize={puzzleSettings.boardSize}
+          enabledShapeIds={puzzleSettings.enabledShapeIds}
+          onBoardSizeChange={handleBoardSizeChange}
+          onShapeToggle={handleShapeToggle}
+        />
+
         <div className="block-puzzle-board-wrap">
           <div
             ref={boardRef}
             className="block-puzzle-board"
             role="grid"
             aria-label="Block Puzzle board"
-            style={{ '--block-board-size': SIZE }}
+            style={{ '--block-board-size': gs.size }}
             onPointerLeave={() => !dragRef.current && setHover(null)}
           >
             {gs.board.map((cell, index) => {
@@ -284,7 +328,7 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
                   className={classes}
                   type="button"
                   role="gridcell"
-                  aria-label={`Row ${rowOf(index) + 1}, column ${colOf(index) + 1}${cell ? ', filled' : ', empty'}`}
+                  aria-label={`Row ${rowOf(index, gs.size) + 1}, column ${colOf(index, gs.size) + 1}${cell ? ', filled' : ', empty'}`}
                   disabled={Boolean(gs.winner)}
                   onClick={() => handleCellClick(index)}
                   onPointerEnter={() => handleCellHover(index)}
@@ -365,6 +409,70 @@ function PieceShape({ piece, ghost = false }) {
       ))}
     </span>
   )
+}
+
+function BlockPuzzleSettingsPane({ boardSize, enabledShapeIds, onBoardSizeChange, onShapeToggle }) {
+  const enabled = new Set(enabledShapeIds)
+
+  return (
+    <details className="block-puzzle-settings">
+      <summary>Settings</summary>
+      <div className="block-puzzle-settings-body">
+        <div className="block-puzzle-setting-group">
+          <span>Board</span>
+          <div className="block-puzzle-size-options">
+            {BOARD_SIZES.map(size => (
+              <button
+                key={size}
+                className={size === boardSize ? 'active' : ''}
+                type="button"
+                aria-pressed={size === boardSize}
+                onClick={() => onBoardSizeChange(size)}
+              >
+                {size}x{size}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="block-puzzle-setting-group">
+          <span>Pieces</span>
+          <div className="block-puzzle-shape-options">
+            {SHAPE_OPTIONS.map(shape => {
+              const active = enabled.has(shape.id)
+              return (
+                <button
+                  key={shape.id}
+                  className={active ? 'active' : ''}
+                  type="button"
+                  aria-pressed={active}
+                  title={shape.label}
+                  onClick={() => onShapeToggle(shape.id)}
+                >
+                  <MiniPiece shapeId={shape.id} active={active} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </details>
+  )
+}
+
+function MiniPiece({ shapeId, active }) {
+  const piece = {
+    shapeId,
+    cells: SHAPES[shapeId],
+    color: active ? 2 : 1,
+  }
+  return <PieceShape piece={piece} />
+}
+
+function sameShapeIds(a = [], b = []) {
+  if (a.length !== b.length) return false
+  const set = new Set(a)
+  return b.every(item => set.has(item))
 }
 
 function readStoredBest() {

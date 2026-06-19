@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, forwardRef } from 'react'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { playerColor } from '../shared/colors.js'
-import { computeBackgammonTurn } from './ai.js'
+import { runAiTask } from '../shared/aiTasks.js'
 import {
   BAR,
   OFF,
@@ -356,17 +356,26 @@ const BackgammonGame = forwardRef(function BackgammonGame({ mode, difficulty, on
   useEffect(() => {
     if (!gs.busy || gs.winner) return
     const delay = diffRef.current === 'expert' ? 700 : diffRef.current === 'hard' ? 580 : diffRef.current === 'medium' ? 460 : 330
+    let task = null
     const timer = setTimeout(() => {
-      setGs(state => {
-        if (!state.busy || state.winner) return state
-        const rolled = rollDice()
-        const dice = expandDice(rolled)
-        const sequence = computeBackgammonTurn(state, state.current, dice, diffRef.current)
-        return applyMoveSequence(state, rolled, sequence, modeRef.current === 'pvp')
+      const rolled = rollDice()
+      const dice = expandDice(rolled)
+      task = runAiTask('backgammon', 'computeBackgammonTurn', [gs, gs.current, dice, diffRef.current])
+      task.promise.then(sequence => {
+        setGs(state => {
+          if (!state.busy || state.winner) return state
+          return applyMoveSequence(state, rolled, sequence, modeRef.current === 'pvp')
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(state => state.busy ? { ...state, busy: false } : state)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy, gs.winner, gs.current])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.winner, gs.current, gs])
 
   function handleRoll() {
     if (gs.winner || gs.busy || gs.phase !== 'roll') return

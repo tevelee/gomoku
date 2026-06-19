@@ -4,9 +4,9 @@ import {
   P1, P2,
   makeBoard, getFlips, getValidMoves, applyMove, countPieces, getWinner, pos,
 } from './logic.js'
-import { computeOthelloMove } from './ai.js'
 import { useGameSync } from '../../hooks/useGameSync.js'
 import { P1_COLOR, P2_COLOR, playerColor } from '../shared/colors.js'
+import { runAiTask } from '../shared/aiTasks.js'
 
 function makeInitialState() {
   return {
@@ -37,17 +37,26 @@ const OthelloGame = forwardRef(function OthelloGame({ mode, difficulty, onStateC
   useEffect(() => {
     if (!gs.busy) return
     const delay = diffRef.current === 'expert' ? 700 : diffRef.current === 'medium' ? 500 : 400
+    let task = null
     const timer = setTimeout(() => {
-      setGs(s => {
-        if (!s.busy) return s
-        const move = computeOthelloMove(s.board, s.current, diffRef.current)
-        if (move == null) return applyPass(s, modeRef.current === 'pvp')
-        const { board: nb, flips } = applyMove(s.board, move, s.current)
-        return afterMove(s, nb, move, modeRef.current === 'pvp', flips)
+      task = runAiTask('othello', 'computeOthelloMove', [gs.board, gs.current, diffRef.current])
+      task.promise.then(move => {
+        setGs(s => {
+          if (!s.busy) return s
+          if (move == null) return applyPass(s, modeRef.current === 'pvp')
+          const { board: nb, flips } = applyMove(s.board, move, s.current)
+          return afterMove(s, nb, move, modeRef.current === 'pvp', flips)
+        })
+      }).catch(error => {
+        console.error(error)
+        setGs(s => s.busy ? { ...s, busy: false } : s)
       })
     }, delay)
-    return () => clearTimeout(timer)
-  }, [gs.busy])
+    return () => {
+      clearTimeout(timer)
+      task?.cancel()
+    }
+  }, [gs.busy, gs.board, gs.current, gs.lastMove, gs.passed])
 
   // ── State helpers ───────────────────────────────────────────────────────────
 

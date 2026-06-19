@@ -12,14 +12,18 @@ export const TOOLS = {
   clear: 'clear',
 }
 
-const BOARD_SIZES = [8, 10, 12, 15, 20]
+const BOARD_SIZES = [8, 10, 12, 15, 20, 25]
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard', 'expert'])
+const SOLVED_STORAGE_KEY = 'game-library:nonogram-solved'
+const RECENT_STORAGE_KEY = 'game-library:nonogram-recent'
+const MAX_STORED_SOLVED = 160
+const MAX_RECENT = 8
 
 const TEMPLATE_DIFFICULTY = {
   easy: ['heart', 'star', 'diamond', 'lightning', 'sailboat'],
-  medium: ['heart', 'star', 'flower', 'rocket', 'crown', 'umbrella', 'key', 'music', 'sailboat'],
-  hard: ['flower', 'rocket', 'crown', 'umbrella', 'key', 'music', 'castle', 'tower', 'trophy'],
-  expert: ['rocket', 'castle', 'tower', 'trophy', 'flower', 'key', 'music'],
+  medium: ['heart', 'star', 'flower', 'rocket', 'crown', 'umbrella', 'key', 'music', 'sailboat', 'abstract'],
+  hard: ['flower', 'rocket', 'crown', 'umbrella', 'key', 'music', 'castle', 'tower', 'trophy', 'abstract', 'glyph'],
+  expert: ['rocket', 'castle', 'tower', 'trophy', 'flower', 'key', 'music', 'abstract', 'glyph', 'circuit'],
 }
 
 export function normalizeSize(value) {
@@ -51,6 +55,7 @@ export function makeState(size = 10, difficulty = 'medium') {
     difficulty: normalizedDifficulty,
     title: picture.title,
     templateId: picture.templateId,
+    fingerprint: picture.fingerprint,
     solution: picture.solution,
     clues: createClues(picture.solution, normalizedSize),
     cells,
@@ -88,7 +93,7 @@ export function createLineClues(values) {
   }
 
   if (run) clues.push(run)
-  return clues.length ? clues : [0]
+  return clues
 }
 
 export function selectCell(state, index) {
@@ -125,6 +130,57 @@ export function applyTool(state, index, tool = state.tool) {
     mistakes,
     winner: isSolved(cells, state.solution) ? P1 : null,
   })
+}
+
+export function autoMarkSolvedLines(state) {
+  if (state.winner) return state
+
+  const cells = [...state.cells]
+  let changed = false
+
+  for (let row = 0; row < state.size; row++) {
+    if (!isRowSolved(state, row)) continue
+    for (let col = 0; col < state.size; col++) {
+      const index = row * state.size + col
+      if (!state.solution[index] && cells[index] === UNKNOWN) {
+        cells[index] = MARKED
+        changed = true
+      }
+    }
+  }
+
+  for (let col = 0; col < state.size; col++) {
+    if (!isColumnSolved(state, col)) continue
+    for (let row = 0; row < state.size; row++) {
+      const index = row * state.size + col
+      if (!state.solution[index] && cells[index] === UNKNOWN) {
+        cells[index] = MARKED
+        changed = true
+      }
+    }
+  }
+
+  if (!changed) return state
+
+  return withScores({
+    ...state,
+    cells,
+    winner: isSolved(cells, state.solution) ? P1 : null,
+  })
+}
+
+export function rememberSolvedPicture(state) {
+  if (!state?.fingerprint) return
+  const solved = readStoredArray(SOLVED_STORAGE_KEY)
+    .filter(item => item.fingerprint !== state.fingerprint)
+  solved.unshift({
+    fingerprint: state.fingerprint,
+    templateId: state.templateId,
+    size: state.size,
+    difficulty: state.difficulty,
+    solvedAt: Date.now(),
+  })
+  writeStoredArray(SOLVED_STORAGE_KEY, solved.slice(0, MAX_STORED_SOLVED))
 }
 
 export function revealCell(state, preferredIndex = state.selected) {
@@ -206,25 +262,231 @@ function cellNeedsReveal(state, index) {
 }
 
 function generatePicture(size, difficulty) {
-  const ids = TEMPLATE_DIFFICULTY[difficulty] ?? TEMPLATE_DIFFICULTY.medium
-  const templateId = ids[Math.floor(Math.random() * ids.length)]
-  const template = TEMPLATES[templateId] ?? TEMPLATES.heart
-  const solution = template.draw(createPainter(size))
-  const density = solution.filter(Boolean).length / solution.length
+  const ids = shuffle(TEMPLATE_DIFFICULTY[difficulty] ?? TEMPLATE_DIFFICULTY.medium)
+  const solved = new Set(readStoredArray(SOLVED_STORAGE_KEY).map(item => item.fingerprint))
+  const recent = new Set(readStoredArray(RECENT_STORAGE_KEY).map(item => item.key))
+  const minDensity = difficulty === 'easy' ? 0.2 : difficulty === 'medium' ? 0.24 : difficulty === 'hard' ? 0.28 : 0.32
+  const maxDensity = difficulty === 'easy' ? 0.66 : 0.72
 
-  if (density < 0.16 || density > 0.62) {
+  for (let attempt = 0; attempt < 36; attempt++) {
+    const templateId = ids[attempt % ids.length]
+    const picture = createPictureCandidate(size, difficulty, templateId, attempt)
+    const density = picture.solution.filter(Boolean).length / picture.solution.length
+    const fingerprint = fingerprintSolution(picture.solution)
+    const recentKey = `${size}:${difficulty}:${picture.templateId}:${fingerprint}`
+
+    if (density < minDensity || density > maxDensity) continue
+    if (hasEmptyLine(picture.solution, size)) continue
+    if (solved.has(fingerprint) && attempt < 28) continue
+    if (recent.has(recentKey) && attempt < 20) continue
+
+    rememberRecentPicture(recentKey)
+    return { ...picture, fingerprint }
+  }
+
+  const solution = repairEmptyLines(generateAbstractSolution(size, difficulty, 99), size)
+  const fingerprint = fingerprintSolution(solution)
+  rememberRecentPicture(`${size}:${difficulty}:abstract:${fingerprint}`)
+  return {
+    templateId: 'abstract',
+    title: 'Abstract',
+    solution,
+    fingerprint,
+  }
+}
+
+function createPictureCandidate(size, difficulty, templateId, attempt) {
+  if (templateId === 'abstract' || templateId === 'glyph' || templateId === 'circuit') {
+    const solution = generateAbstractSolution(size, difficulty, attempt, templateId)
     return {
-      templateId: 'heart',
-      title: TEMPLATES.heart.title,
-      solution: TEMPLATES.heart.draw(createPainter(size)),
+      templateId,
+      title: templateId === 'glyph' ? 'Glyph' : templateId === 'circuit' ? 'Circuit' : 'Abstract',
+      solution,
     }
   }
 
+  const template = TEMPLATES[templateId] ?? TEMPLATES.heart
+  const transformedId = `${templateId}-${attempt % 8}`
   return {
-    templateId,
+    templateId: transformedId,
     title: template.title,
-    solution,
+    solution: transformSolution(template.draw(createPainter(size)), size, attempt),
   }
+}
+
+function generateAbstractSolution(size, difficulty, attempt, style = 'abstract') {
+  const p = createPainter(size)
+  const complex = difficulty === 'expert' ? 1.35 : difficulty === 'hard' ? 1.1 : difficulty === 'medium' ? 0.86 : 0.65
+  const strokes = Math.round((size / 2.4) * complex)
+  const blobs = Math.round((size / 6) * complex)
+
+  for (let i = 0; i < strokes; i++) {
+    const edgeA = randomEdgePoint()
+    const edgeB = randomEdgePoint()
+    const width = style === 'circuit'
+      ? randomBetween(0.035, 0.06)
+      : randomBetween(0.045, difficulty === 'expert' ? 0.085 : 0.11)
+    p.strokeLine(edgeA[0], edgeA[1], edgeB[0], edgeB[1], width)
+
+    if (style !== 'circuit' && Math.random() < 0.35) {
+      p.strokeLine(1 - edgeA[0], edgeA[1], 1 - edgeB[0], edgeB[1], width * 0.82)
+    }
+  }
+
+  for (let i = 0; i < blobs; i++) {
+    const rx = randomBetween(0.055, 0.15)
+    const ry = randomBetween(0.045, 0.14)
+    p.fillEllipse(randomBetween(0.12, 0.88), randomBetween(0.12, 0.88), rx, ry)
+  }
+
+  if (style === 'glyph') {
+    p.fillPolygon(starPoints(randomBetween(0.34, 0.66), randomBetween(0.34, 0.66), randomBetween(0.18, 0.34), randomBetween(0.07, 0.16), 4 + (attempt % 3)))
+  }
+
+  if (style === 'circuit') {
+    const lanes = Math.max(3, Math.floor(size / 5))
+    for (let i = 0; i < lanes; i++) {
+      const y = (i + 1) / (lanes + 1)
+      p.strokeLine(0.05, y, 0.95, y + randomBetween(-0.08, 0.08), 0.035)
+    }
+    for (let i = 0; i < lanes; i++) {
+      const x = (i + 1) / (lanes + 1)
+      p.strokeLine(x, 0.06, x + randomBetween(-0.08, 0.08), 0.94, 0.035)
+    }
+  }
+
+  let solution = p.result()
+  solution = punchHoles(solution, size, difficulty)
+  solution = repairEmptyLines(solution, size)
+  return solution
+}
+
+function transformSolution(solution, size, attempt) {
+  let next = [...solution]
+  if (attempt & 1) next = flipHorizontal(next, size)
+  if (attempt & 2) next = flipVertical(next, size)
+  if (attempt & 4) next = transpose(next, size)
+  return repairEmptyLines(next, size)
+}
+
+function flipHorizontal(solution, size) {
+  return solution.map((_, index) => {
+    const row = rowOf(size, index)
+    const col = colOf(size, index)
+    return solution[row * size + (size - 1 - col)]
+  })
+}
+
+function flipVertical(solution, size) {
+  return solution.map((_, index) => {
+    const row = rowOf(size, index)
+    const col = colOf(size, index)
+    return solution[(size - 1 - row) * size + col]
+  })
+}
+
+function transpose(solution, size) {
+  return solution.map((_, index) => {
+    const row = rowOf(size, index)
+    const col = colOf(size, index)
+    return solution[col * size + row]
+  })
+}
+
+function punchHoles(solution, size, difficulty) {
+  const next = [...solution]
+  const chance = difficulty === 'expert' ? 0.22 : difficulty === 'hard' ? 0.16 : 0.08
+  for (let row = 1; row < size - 1; row++) {
+    for (let col = 1; col < size - 1; col++) {
+      const index = row * size + col
+      if (!next[index] || Math.random() > chance) continue
+      const horizontal = next[index - 1] && next[index + 1]
+      const vertical = next[index - size] && next[index + size]
+      if (horizontal || vertical) next[index] = false
+    }
+  }
+  return next
+}
+
+function repairEmptyLines(solution, size) {
+  const next = [...solution]
+
+  for (let row = 0; row < size; row++) {
+    if (Array.from({ length: size }, (_, col) => next[row * size + col]).some(Boolean)) continue
+    const col = Math.min(size - 1, Math.max(0, Math.floor(size * randomBetween(0.18, 0.82))))
+    next[row * size + col] = true
+  }
+
+  for (let col = 0; col < size; col++) {
+    if (Array.from({ length: size }, (_, row) => next[row * size + col]).some(Boolean)) continue
+    const row = Math.min(size - 1, Math.max(0, Math.floor(size * randomBetween(0.18, 0.82))))
+    next[row * size + col] = true
+  }
+
+  return next
+}
+
+function hasEmptyLine(solution, size) {
+  for (let row = 0; row < size; row++) {
+    let any = false
+    for (let col = 0; col < size; col++) any ||= solution[row * size + col]
+    if (!any) return true
+  }
+  for (let col = 0; col < size; col++) {
+    let any = false
+    for (let row = 0; row < size; row++) any ||= solution[row * size + col]
+    if (!any) return true
+  }
+  return false
+}
+
+function fingerprintSolution(solution) {
+  return solution.map(value => value ? '1' : '0').join('')
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min)
+}
+
+function randomEdgePoint() {
+  const side = Math.floor(Math.random() * 4)
+  const v = randomBetween(0.04, 0.96)
+  if (side === 0) return [v, 0.04]
+  if (side === 1) return [0.96, v]
+  if (side === 2) return [v, 0.96]
+  return [0.04, v]
+}
+
+function shuffle(items) {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[next[i], next[j]] = [next[j], next[i]]
+  }
+  return next
+}
+
+function readStoredArray(key) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) ?? '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function writeStoredArray(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Storage can be unavailable in private or embedded contexts.
+  }
+}
+
+function rememberRecentPicture(key) {
+  const recent = readStoredArray(RECENT_STORAGE_KEY).filter(item => item.key !== key)
+  recent.unshift({ key, at: Date.now() })
+  writeStoredArray(RECENT_STORAGE_KEY, recent.slice(0, MAX_RECENT))
 }
 
 function createPainter(size) {
