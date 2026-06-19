@@ -139,15 +139,17 @@ function scoreActionFor(cells, inHand, onBoard, player, move) {
   score += (afterMyClosers - beforeMyClosers) * 260
 
   let winningCapture = false
+  let legalCapture = false
   if (formsMill) {
     const removable = getRemovable(applied.cells, player)
+    legalCapture = removable.length > 0
     const removalScores = removable.map(node => scoreRemoval(applied.cells, applied.inHand, applied.onBoard, player, node))
     winningCapture = removalScores.some(s => s >= WIN_SCORE)
     score += 6000 + (flying ? 2500 : 0) + Math.max(0, ...removalScores)
     if (winningCapture) score += WIN_SCORE
   }
 
-  return { score, formsMill, winningCapture }
+  return { score, formsMill, legalCapture, winningCapture }
 }
 
 function orderMoves(cells, inHand, onBoard, player, moves) {
@@ -240,6 +242,9 @@ export function computeMorrisMove(state, difficulty) {
   const scored = orderMoves(cells, inHand, onBoard, player, candidates)
   const winningCapture = scored.find(({ tactics }) => tactics.winningCapture)
   if (winningCapture) return winningCapture.m
+
+  const immediateCapture = scored.find(({ tactics }) => tactics.formsMill && tactics.legalCapture)
+  if (immediateCapture) return immediateCapture.m
 
   // In the flying endgame, forming a mill is usually the fastest path to close.
   // Do not let a shallow defensive line talk the expert out of taking it.
