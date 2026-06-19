@@ -46,8 +46,8 @@ const LAYOUTS = {
     handH: 104,
     footerH: 40,
     baseHex: 36,
-    reserveStart: 140,
-    reserveStep: 72,
+    reserveStart: 126,
+    reserveStep: 82,
     reserveColumns: 8,
     reserveY: 42,
     reserveRowGap: 72,
@@ -55,7 +55,7 @@ const LAYOUTS = {
     turnY: 32,
     turnTextX: 52,
     turnStatusY: 62,
-    queenX: 720,
+    queenX: 806,
     queenY: 24,
     showTurnStatus: true,
     showQueens: true,
@@ -63,14 +63,14 @@ const LAYOUTS = {
   mobile: {
     viewW: 430,
     viewH: 720,
-    handH: 190,
+    handH: 220,
     footerH: 42,
     baseHex: 34,
-    reserveStart: 90,
+    reserveStart: 82,
     reserveStep: 100,
     reserveColumns: 4,
     reserveY: 58,
-    reserveRowGap: 72,
+    reserveRowGap: 94,
     turnX: 18,
     turnY: 24,
     turnTextX: 34,
@@ -356,26 +356,48 @@ function HivePiece({ piece, x, y, radius, selected, selectable, last, coveredDep
 
 function ReserveTile({ type, count, x, y, current, selected, disabled, required, onClick }) {
   const color = playerColor(current)
-  const opacity = disabled ? 0.3 : required ? 1 : 0.86
+  const tileOpacity = disabled ? 0.34 : required ? 1 : 0.86
+  const name = PIECE_NAMES[type]
+  const nameSize = name.length > 9 ? 8.5 : name.length > 7 ? 9.5 : 10.5
 
   return (
     <g
       onClick={disabled ? undefined : onClick}
-      style={{ cursor: disabled ? 'default' : 'pointer', opacity }}
+      style={{ cursor: disabled ? 'default' : 'pointer' }}
       aria-label={PIECE_NAMES[type]}
     >
-      <ellipse cx={x} cy={y + 25} rx="34" ry="9" fill="#020409" opacity="0.28" />
-      {selected && <polygon points={hexPoints(x, y, 38)} fill="none" stroke="#e3b341" strokeWidth="3" />}
-      <polygon points={hexPoints(x, y, 31)} fill={color} stroke="#f4e6b8" strokeWidth="1.6" />
-      <polygon points={hexPoints(x, y, 24)} fill="none" stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1" />
-      <g transform={`translate(${x} ${y - 1}) scale(0.66)`}>
-        <PieceMark type={type} color={playerInk(current)} />
+      <g opacity={tileOpacity}>
+        <ellipse cx={x} cy={y + 25} rx="34" ry="9" fill="#020409" opacity="0.28" />
+        {selected && <polygon points={hexPoints(x, y, 38)} fill="none" stroke="#e3b341" strokeWidth="3" />}
+        <polygon points={hexPoints(x, y, 31)} fill={color} stroke="#f4e6b8" strokeWidth="1.6" />
+        <polygon points={hexPoints(x, y, 24)} fill="none" stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1" />
+        <g transform={`translate(${x} ${y - 1}) scale(0.66)`}>
+          <PieceMark type={type} color={playerInk(current)} />
+        </g>
       </g>
-      <text x={x + 22} y={y + 27} fill="#0d1117" fontFamily={FONT} fontSize="12" fontWeight="900" textAnchor="middle">
+      <rect
+        x={x - 18}
+        y={y - 32}
+        width="36"
+        height="22"
+        rx="11"
+        fill={disabled ? '#21262d' : '#0d1117'}
+        stroke={disabled ? '#30363d' : color}
+        strokeWidth="1.6"
+      />
+      <text x={x} y={y - 16} fill={disabled ? '#8b949e' : color} fontFamily={FONT} fontSize="13" fontWeight="950" textAnchor="middle">
         {count}
       </text>
-      <text x={x} y={y + 47} fill={disabled ? '#6e7681' : '#c9d1d9'} fontFamily={FONT} fontSize="11" fontWeight="800" textAnchor="middle">
-        {PIECE_LABELS[type]}
+      <text
+        x={x}
+        y={y + 49}
+        fill={disabled ? '#6e7681' : '#c9d1d9'}
+        fontFamily={FONT}
+        fontSize={nameSize}
+        fontWeight="850"
+        textAnchor="middle"
+      >
+        {name}
       </text>
     </g>
   )
