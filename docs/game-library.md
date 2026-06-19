@@ -32,6 +32,8 @@ Each game should eventually have:
 | Dots and Boxes | Grid games | vs AI, Local 2P | Selectable 3x3 through 6x6 box grids |
 | Backgammon | Race/table games | vs AI, Local 2P | Dice movement, hits, bar entry, and bearing off |
 | Nonogram | Puzzle | Solo | Generated picture puzzles with selectable 8x8 through 20x20 grids |
+| Threes | Puzzle | Solo | One-cell swipe/merge grid with 1, 2, and 3+ tiles |
+| 2048 | Puzzle | Solo | Full-slide merge grid with powers of two |
 | Sudoku | Puzzle | Solo | Generated puzzles with notes, hints, and uniqueness checks |
 
 ## Planned Game Candidates
@@ -41,8 +43,6 @@ Each game should eventually have:
 | Tic Tac Toe | Grid games | vs AI, Local 2P | Fast baseline game |
 | Ultimate Tic-Tac-Toe | Grid games | vs AI, Local 2P | Strategic tic-tac-toe variant |
 | Vanishing Tic Tac Toe | Grid games | vs AI, Local 2P | Also known as Tic Tac Toe Disappear or XOGone |
-| Threes | Puzzle | Solo | Swipe/merge grid with 1, 2, and 3+ tiles |
-| 2048 | Puzzle | Solo | Swipe/merge powers-of-two grid |
 | Crosswords | Word games | Solo | Needs puzzle source or generator |
 | Chess | Abstract strategy | vs AI, Local 2P | Use proven move-generation logic |
 | Battleship | Hidden information | vs AI, Local 2P | Setup phase plus guessing phase |

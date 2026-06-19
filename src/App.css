@@ -2001,6 +2001,290 @@ body {
   accent-color: var(--p1);
 }
 
+/* ── Tile Merge Games ───────────────────────────────────────────────────── */
+.tile-game {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px;
+  background:
+    linear-gradient(160deg, rgba(88,166,255,0.15), rgba(63,185,80,0.09) 42%, rgba(248,81,73,0.08)),
+    #0d1117;
+  outline: none;
+  touch-action: none;
+}
+
+.tile-game-2048 {
+  background:
+    linear-gradient(160deg, rgba(237,194,46,0.16), rgba(88,166,255,0.1) 48%, rgba(63,185,80,0.08)),
+    #0d1117;
+}
+
+.tile-game-threes {
+  background:
+    linear-gradient(160deg, rgba(74,167,255,0.16), rgba(255,111,97,0.1) 45%, rgba(247,243,232,0.07)),
+    #0d1117;
+}
+
+.tile-game-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 14px;
+  width: min(100%, 740px);
+  height: 100%;
+  min-height: 0;
+}
+
+.tile-game-scoreboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 560px);
+}
+
+.tile-game-scoreboard div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  color: #c9d1d9;
+  background: #171b22;
+  border: 1px solid #36424f;
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.tile-game-scoreboard strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f2cc60;
+  font-size: 1.14rem;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-game-scoreboard span {
+  color: #8b949e;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.tile-game-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 136px;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.tile-game-board-wrap {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tile-game-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 58vh, 500px);
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+  background: #1f252c;
+  border: 2px solid #46515d;
+  border-radius: var(--radius);
+  box-shadow:
+    0 18px 44px rgba(0,0,0,0.36),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -2px 0 rgba(0,0,0,0.24);
+}
+
+.tile-game-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 44%),
+    #151b22;
+  border: 1px solid #303943;
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.tile-game-cell.filled,
+.tile-game-next-tile {
+  color: var(--tile-text);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0) 42%),
+    var(--tile-bg);
+  border-color: var(--tile-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.32),
+    inset 0 -2px 0 rgba(0,0,0,0.2),
+    0 5px 12px rgba(0,0,0,0.28);
+}
+
+.tile-game-cell span,
+.tile-game-next-tile span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--tile-font-size);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-overflow: clip;
+}
+
+.tile-game-cell.spawned {
+  animation: tile-game-pop 190ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tile-game-cell.merged span {
+  animation: tile-game-merge 180ms ease-out;
+}
+
+.tile-game-panel {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  width: 136px;
+  min-width: 0;
+}
+
+.tile-game-next {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  color: #c9d1d9;
+  background: #171b22;
+  border: 1px solid #36424f;
+  border-radius: var(--radius);
+}
+
+.tile-game-next > span {
+  color: #8b949e;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.tile-game-next-tile {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  aspect-ratio: 1;
+  border: 1px solid var(--tile-border);
+  border-radius: var(--radius);
+}
+
+.tile-game-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-areas:
+    ". up ."
+    "left down right";
+  gap: 8px;
+  justify-content: center;
+}
+
+.tile-game-control {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text);
+  background: #21262d;
+  border: 1px solid #36424f;
+  border-radius: var(--radius);
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
+}
+
+.tile-game-control-up { grid-area: up; }
+.tile-game-control-left { grid-area: left; }
+.tile-game-control-right { grid-area: right; }
+.tile-game-control-down { grid-area: down; }
+
+.tile-game-control:hover:not(:disabled),
+.tile-game-control:focus-visible:not(:disabled) {
+  border-color: var(--p1);
+  background: #263445;
+}
+
+.tile-game-control:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.tile-game-control:disabled {
+  color: #6e7681;
+  cursor: default;
+  opacity: 0.58;
+}
+
+.tile-game-arrow {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: solid currentColor;
+  border-width: 0 3px 3px 0;
+}
+
+.tile-game-arrow.up { transform: translateY(3px) rotate(-135deg); }
+.tile-game-arrow.right { transform: translateX(-2px) rotate(-45deg); }
+.tile-game-arrow.down { transform: translateY(-3px) rotate(45deg); }
+.tile-game-arrow.left { transform: translateX(2px) rotate(135deg); }
+
+.tile-game-live {
+  min-height: 18px;
+  color: #8b949e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.tile-game-live:empty {
+  visibility: hidden;
+}
+
+@keyframes tile-game-pop {
+  0%   { transform: scale(0.62); opacity: 0; }
+  72%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes tile-game-merge {
+  0%   { transform: scale(0.88); }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
 /* ── Block Puzzle ───────────────────────────────────────────────────────── */
 .block-puzzle-game {
   position: relative;
@@ -2620,6 +2904,50 @@ body {
   .nonogram-left-clue { padding: 1px 4px; }
   .nonogram-tool { height: 34px; padding: 0 7px; font-size: 0.76rem; }
 
+  .tile-game { padding: 10px; }
+  .tile-game-shell { gap: 9px; }
+  .tile-game-scoreboard { gap: 6px; }
+  .tile-game-scoreboard div { padding: 7px 6px; }
+  .tile-game-scoreboard strong { font-size: 1rem; }
+  .tile-game-scoreboard span { font-size: 0.62rem; }
+  .tile-game-main {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 10px;
+  }
+  .tile-game-board {
+    width: min(100%, 50vh);
+    gap: 7px;
+    padding: 8px;
+  }
+  .tile-game-panel {
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 320px);
+    gap: 10px;
+  }
+  .tile-game-next {
+    grid-template-columns: auto auto;
+    width: auto;
+    min-height: 44px;
+    padding: 7px 9px;
+  }
+  .tile-game-next-tile {
+    width: 38px;
+  }
+  .tile-game-controls {
+    grid-template-columns: repeat(3, 40px);
+    gap: 7px;
+  }
+  .tile-game-control {
+    width: 40px;
+    height: 40px;
+  }
+  .tile-game-live {
+    display: none;
+  }
+
   .block-puzzle-game { padding: 10px; }
   .block-puzzle-shell { gap: 9px; }
   .block-puzzle-scoreboard { gap: 6px; }
@@ -2771,6 +3099,32 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .tile-game-shell {
+    width: min(100%, 620px);
+  }
+
+  .tile-game-main {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 12px;
+  }
+
+  .tile-game-board {
+    width: min(100%, 52vh);
+  }
+
+  .tile-game-panel {
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 360px);
+  }
+
+  .tile-game-next {
+    grid-template-columns: auto auto;
+    width: auto;
+  }
+
   .block-puzzle-shell {
     width: min(100%, 620px);
   }
@@ -2799,10 +3153,13 @@ body {
   .ataxx-converted-piece,
   .ataxx-jump-piece,
   .ataxx-clone-piece,
+  .tile-game-cell.spawned,
+  .tile-game-cell.merged span,
   .block-puzzle-gem,
   .block-puzzle-cell.line-cleared::after {
     animation: none;
   }
+  .tile-game-control,
   .block-puzzle-cell,
   .block-puzzle-piece-slot {
     transition: none;
