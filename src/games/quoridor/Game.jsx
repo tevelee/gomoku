@@ -134,15 +134,17 @@ const QuoridorGame = forwardRef(function QuoridorGame({ mode, difficulty, onStat
     setHoverWall({ row, col, orient })
   }
 
-  function toggleWallMode() {
+  function activateWallMode(orient) {
     if (!isHumanTurn || currentWalls <= 0) return
-    setWallMode(v => !v)
-    setSelectedPawn(false)
-    setHoverWall(null)
-  }
-
-  function toggleOrient() {
-    setWallOrient(v => v === 'h' ? 'v' : 'h')
+    if (wallMode && wallOrient === orient) {
+      setWallMode(false)
+      setHoverWall(null)
+    } else {
+      setWallMode(true)
+      setWallOrient(orient)
+      setSelectedPawn(false)
+      setHoverWall(null)
+    }
   }
 
   // Check if a wall slot is geometrically free (no overlap/crossing)
@@ -319,38 +321,38 @@ const QuoridorGame = forwardRef(function QuoridorGame({ mode, difficulty, onStat
         {walls1} walls
       </text>
 
-      {/* Wall mode toggle button */}
+      {/* Horizontal wall button */}
       {isHumanTurn && currentWalls > 0 && (
-        <g onClick={toggleWallMode} style={{ cursor: 'pointer' }}>
+        <g onClick={() => activateWallMode('h')} style={{ cursor: 'pointer' }}>
           <rect
-            x={VIEW_W / 2 - 44} y={BOARD_PX + 6} width={88} height={24}
-            fill={wallMode ? curColor : '#30363d'} rx={12}
+            x={VIEW_W / 2 - 86} y={BOARD_PX + 6} width={80} height={24}
+            fill={wallMode && wallOrient === 'h' ? curColor : '#30363d'} rx={12}
           />
           <text
-            x={VIEW_W / 2} y={BOARD_PX + 22}
-            fill={wallMode ? '#0d1117' : '#8b949e'}
+            x={VIEW_W / 2 - 46} y={BOARD_PX + 22}
+            fill={wallMode && wallOrient === 'h' ? '#0d1117' : '#8b949e'}
             fontSize={11} fontFamily="-apple-system,sans-serif" fontWeight={700}
             textAnchor="middle"
           >
-            {wallMode ? (wallOrient === 'h' ? '— Wall' : '| Wall') : 'Place Wall'}
+            — Wall
           </text>
         </g>
       )}
 
-      {/* Orient toggle (only when wall mode active) */}
-      {isHumanTurn && wallMode && (
-        <g onClick={toggleOrient} style={{ cursor: 'pointer' }}>
+      {/* Vertical wall button */}
+      {isHumanTurn && currentWalls > 0 && (
+        <g onClick={() => activateWallMode('v')} style={{ cursor: 'pointer' }}>
           <rect
-            x={VIEW_W / 2 + 50} y={BOARD_PX + 6} width={32} height={24}
-            fill="#21262d" rx={12}
+            x={VIEW_W / 2 + 6} y={BOARD_PX + 6} width={80} height={24}
+            fill={wallMode && wallOrient === 'v' ? curColor : '#30363d'} rx={12}
           />
           <text
-            x={VIEW_W / 2 + 66} y={BOARD_PX + 22}
-            fill={curColor}
-            fontSize={14} fontFamily="-apple-system,sans-serif" fontWeight={700}
+            x={VIEW_W / 2 + 46} y={BOARD_PX + 22}
+            fill={wallMode && wallOrient === 'v' ? '#0d1117' : '#8b949e'}
+            fontSize={11} fontFamily="-apple-system,sans-serif" fontWeight={700}
             textAnchor="middle"
           >
-            {wallOrient === 'h' ? '|' : '—'}
+            | Wall
           </text>
         </g>
       )}
