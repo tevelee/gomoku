@@ -34,7 +34,7 @@ function didBoardChange(prev, next) {
   return prev.cells !== next.cells || prev.mistakes !== next.mistakes || prev.winner !== next.winner
 }
 
-const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settings, onStateChange }, ref) {
+const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settings, aiFirst, onStateChange }, ref) {
   const boardSize = normalizeSize(settings?.boardSize)
   const activeDifficulty = normalizeDifficulty(difficulty)
   const [gs, setGs] = useState(() => makeState(boardSize, activeDifficulty))
@@ -53,6 +53,7 @@ const NonogramGame = forwardRef(function NonogramGame({ mode, difficulty, settin
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

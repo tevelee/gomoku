@@ -51,7 +51,7 @@ function Piece({ piece, className = '' }) {
   )
 }
 
-const QuartoGame = forwardRef(function QuartoGame({ mode, difficulty, onStateChange }, ref) {
+const QuartoGame = forwardRef(function QuartoGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
   const rootRef = useRef(null)
@@ -60,6 +60,7 @@ const QuartoGame = forwardRef(function QuartoGame({ mode, difficulty, onStateCha
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

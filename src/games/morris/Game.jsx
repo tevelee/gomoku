@@ -39,12 +39,12 @@ function findClosedMill(cells, node, player) {
   return MILLS.find(m => m.includes(node) && m.every(n => cells[n] === player)) ?? null
 }
 
-const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, onStateChange }, ref) {
+const MorrisGame = forwardRef(function MorrisGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
   const { modeRef, diffRef } = useGameSync({
-    ref, mode, difficulty, onStateChange,
+    ref, mode, difficulty, aiFirst, onStateChange,
     gs, setGs, historyRef, makeInitial: makeInitialState,
   })
 

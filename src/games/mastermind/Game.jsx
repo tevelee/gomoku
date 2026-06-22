@@ -44,7 +44,7 @@ function Feedback({ feedback, pegs }) {
   )
 }
 
-const MastermindGame = forwardRef(function MastermindGame({ mode, difficulty, onStateChange }, ref) {
+const MastermindGame = forwardRef(function MastermindGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const activeDifficulty = normalizeDifficulty(difficulty)
   const [gs, setGs] = useState(() => makeState(activeDifficulty))
   const historyRef = useRef([])
@@ -54,6 +54,7 @@ const MastermindGame = forwardRef(function MastermindGame({ mode, difficulty, on
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

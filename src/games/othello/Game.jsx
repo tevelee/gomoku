@@ -25,12 +25,12 @@ function makeInitialState() {
 // Star points (traditional board markers)
 const STARS = [18, 21, 42, 45]
 
-const OthelloGame = forwardRef(function OthelloGame({ mode, difficulty, onStateChange }, ref) {
+const OthelloGame = forwardRef(function OthelloGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
 
   const historyRef = useRef([])
   const { modeRef, diffRef } = useGameSync({
-    ref, mode, difficulty, onStateChange,
+    ref, mode, difficulty, aiFirst, onStateChange,
     gs, setGs, historyRef, makeInitial: makeInitialState,
   })
 

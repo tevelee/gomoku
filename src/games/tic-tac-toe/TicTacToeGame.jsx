@@ -30,7 +30,7 @@ export default function createTicTacToeGame({
   aiExportName,
   title,
 }) {
-  const Game = forwardRef(function TicTacToeGame({ mode, difficulty, onStateChange }, ref) {
+  const Game = forwardRef(function TicTacToeGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
     const [gs, setGs] = useState(() => makeState(variant))
     const historyRef = useRef([])
     const rootRef = useRef(null)
@@ -38,6 +38,7 @@ export default function createTicTacToeGame({
       ref,
       mode,
       difficulty,
+      aiFirst,
       onStateChange,
       gs,
       setGs,

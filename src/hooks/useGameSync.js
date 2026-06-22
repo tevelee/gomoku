@@ -2,17 +2,19 @@ import { useRef, useEffect, useImperativeHandle } from 'react'
 import { normalizeGameUiState } from '../games/shared/runtime.js'
 
 export function useGameSync({
-  ref, mode, difficulty, onStateChange,
+  ref, mode, difficulty, aiFirst = false, onStateChange,
   gs, setGs, historyRef, makeInitial,
   onExtraReset,
   preserveScores = true,
 }) {
-  const modeRef  = useRef(mode)
-  const diffRef  = useRef(difficulty)
-  const notifyCb = useRef(onStateChange)
+  const modeRef     = useRef(mode)
+  const diffRef     = useRef(difficulty)
+  const aiFirstRef  = useRef(aiFirst)
+  const notifyCb    = useRef(onStateChange)
 
   useEffect(() => { modeRef.current = mode },           [mode])
   useEffect(() => { diffRef.current = difficulty },     [difficulty])
+  useEffect(() => { aiFirstRef.current = aiFirst },     [aiFirst])
   useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
 
   useEffect(() => {
@@ -31,7 +33,10 @@ export function useGameSync({
       historyRef.current = []
       setGs(s => {
         const next = makeInitial()
-        return preserveScores ? { ...next, scores: s.scores } : next
+        const initial = (aiFirstRef.current && modeRef.current === 'pvai')
+          ? { ...next, current: 2, busy: true }
+          : next
+        return preserveScores ? { ...initial, scores: s.scores } : initial
       })
       onExtraReset?.()
     },

@@ -38,13 +38,13 @@ function makeInitialState() {
   }
 }
 
-const Connect4Game = forwardRef(function Connect4Game({ mode, difficulty, onStateChange }, ref) {
+const Connect4Game = forwardRef(function Connect4Game({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const [hoverCol, setHoverCol] = useState(-1)
 
   const historyRef = useRef([])
   const { modeRef, diffRef } = useGameSync({
-    ref, mode, difficulty, onStateChange,
+    ref, mode, difficulty, aiFirst, onStateChange,
     gs, setGs, historyRef, makeInitial: makeInitialState,
     onExtraReset: () => setHoverCol(-1),
   })

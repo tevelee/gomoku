@@ -5,7 +5,7 @@ import { runAiTask } from '../shared/aiTasks.js'
 
 const BASE_CELL = 44
 
-const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateChange }, ref) {
+const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const canvasEl = useRef(null)
 
   // View state — all imperative, no React re-renders
@@ -31,17 +31,20 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
   const pushStateRef = useRef(null)
 
   // Undo state
-  const historyRef  = useRef([])
-  const botTimerRef = useRef(null)
-  const botTaskRef  = useRef(null)
-  const undoRef     = useRef(null)
+  const historyRef     = useRef([])
+  const botTimerRef    = useRef(null)
+  const botTaskRef     = useRef(null)
+  const undoRef        = useRef(null)
+  const scheduleBotRef = useRef(null)
 
   // Live prop refs so event-handler closures always read current values
-  const modeRef   = useRef(mode)
-  const diffRef   = useRef(difficulty)
-  const notifyCb  = useRef(onStateChange)
-  useEffect(() => { modeRef.current = mode }, [mode])
+  const modeRef    = useRef(mode)
+  const diffRef    = useRef(difficulty)
+  const aiFirstRef = useRef(aiFirst)
+  const notifyCb   = useRef(onStateChange)
+  useEffect(() => { modeRef.current = mode },       [mode])
   useEffect(() => { diffRef.current = difficulty }, [difficulty])
+  useEffect(() => { aiFirstRef.current = aiFirst }, [aiFirst])
   useEffect(() => { notifyCb.current = onStateChange }, [onStateChange])
 
   useImperativeHandle(ref, () => ({
@@ -51,7 +54,6 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
       botTaskRef.current?.cancel()
       botTaskRef.current = null
       board.current.clear()
-      current.current   = HUMAN
       winner.current    = null
       winLine.current   = null
       lastMove.current  = null
@@ -62,8 +64,14 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
       pieceAnims.current.clear()
       panAnim.current   = null
       if (rafId.current) { cancelAnimationFrame(rafId.current); rafId.current = null }
-      drawFrameRef.current?.()
-      pushStateRef.current?.()
+      if (aiFirstRef.current && modeRef.current !== 'pvp') {
+        current.current = BOT
+        scheduleBotRef.current?.()
+      } else {
+        current.current = HUMAN
+        drawFrameRef.current?.()
+        pushStateRef.current?.()
+      }
     },
     undo() { undoRef.current?.() },
   }))
@@ -118,6 +126,7 @@ const GomokuGame = forwardRef(function GomokuGame({ mode, difficulty, onStateCha
       pushState()
     }
     undoRef.current = undo
+    scheduleBotRef.current = scheduleBot
 
     // ── animation helpers ──────────────────────────────────────────────────
     function springScale(t) {

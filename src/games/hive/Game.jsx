@@ -404,7 +404,7 @@ function ReserveTile({ type, count, x, y, current, selected, disabled, required,
   )
 }
 
-const HiveGame = forwardRef(function HiveGame({ mode, difficulty, onStateChange }, ref) {
+const HiveGame = forwardRef(function HiveGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const layout = useHiveLayout()
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
@@ -413,6 +413,7 @@ const HiveGame = forwardRef(function HiveGame({ mode, difficulty, onStateChange 
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

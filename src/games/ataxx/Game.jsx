@@ -65,7 +65,7 @@ function finalizeTurn(s, board, move, converted, movedPlayer, pvp) {
   }
 }
 
-const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, onStateChange }, ref) {
+const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, aiFirst, onStateChange }, ref) {
   const boardLayout = normalizeBoardLayoutId(settings?.boardLayout)
   const [gs, setGs] = useState(() => makeInitialState(boardLayout))
   const historyRef = useRef([])
@@ -74,6 +74,7 @@ const AtaxxGame = forwardRef(function AtaxxGame({ mode, difficulty, settings, on
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

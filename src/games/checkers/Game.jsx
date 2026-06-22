@@ -104,7 +104,7 @@ function finishMove(s, move, pvp) {
   }
 }
 
-const CheckersGame = forwardRef(function CheckersGame({ mode, difficulty, onStateChange }, ref) {
+const CheckersGame = forwardRef(function CheckersGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
 
@@ -112,6 +112,7 @@ const CheckersGame = forwardRef(function CheckersGame({ mode, difficulty, onStat
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

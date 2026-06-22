@@ -99,7 +99,7 @@ function finishMove(s, board, move, pvp) {
   }
 }
 
-const HexGame = forwardRef(function HexGame({ mode, difficulty, onStateChange }, ref) {
+const HexGame = forwardRef(function HexGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const [hovered, setHovered] = useState(-1)
   const historyRef = useRef([])
@@ -108,6 +108,7 @@ const HexGame = forwardRef(function HexGame({ mode, difficulty, onStateChange },
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

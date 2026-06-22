@@ -23,7 +23,7 @@ import {
 const STORAGE_KEY = 'game-library:block-puzzle-best'
 const DRAG_THRESHOLD = 5
 
-const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, onStateChange }, ref) {
+const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const activeDifficulty = normalizeDifficulty(difficulty)
   const bestRef = useRef(readStoredBest())
   const [puzzleSettings, setPuzzleSettings] = useState(() => ({
@@ -43,6 +43,7 @@ const BlockPuzzleGame = forwardRef(function BlockPuzzleGame({ mode, difficulty, 
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

@@ -1213,6 +1213,13 @@ body {
   color: #6e7681;
   cursor: default;
 }
+.action-option.active {
+  color: #58a6ff;
+}
+.action-option.active:hover:not(:disabled),
+.action-option.active:focus:not(:disabled) {
+  color: #0d1117;
+}
 
 .btn-new {
   background: #1a4a28;

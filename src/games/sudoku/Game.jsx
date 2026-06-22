@@ -41,7 +41,7 @@ function SudokuCellContent({ notes, value }) {
   )
 }
 
-const SudokuGame = forwardRef(function SudokuGame({ mode, difficulty, onStateChange }, ref) {
+const SudokuGame = forwardRef(function SudokuGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const activeDifficulty = normalizeDifficulty(difficulty)
   const [gs, setGs] = useState(() => makeState(activeDifficulty))
   const historyRef = useRef([])
@@ -51,6 +51,7 @@ const SudokuGame = forwardRef(function SudokuGame({ mode, difficulty, onStateCha
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

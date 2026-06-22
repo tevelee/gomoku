@@ -20,7 +20,7 @@ const THINK_DELAY = {
   expert: 680,
 }
 
-const UltimateTicTacToeGame = forwardRef(function UltimateTicTacToeGame({ mode, difficulty, onStateChange }, ref) {
+const UltimateTicTacToeGame = forwardRef(function UltimateTicTacToeGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeState)
   const historyRef = useRef([])
   const rootRef = useRef(null)
@@ -28,6 +28,7 @@ const UltimateTicTacToeGame = forwardRef(function UltimateTicTacToeGame({ mode, 
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

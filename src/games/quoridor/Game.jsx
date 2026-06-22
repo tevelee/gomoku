@@ -43,7 +43,7 @@ function makeInitialState() {
   return makeState()
 }
 
-const QuoridorGame = forwardRef(function QuoridorGame({ mode, difficulty, onStateChange }, ref) {
+const QuoridorGame = forwardRef(function QuoridorGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
   const [wallMode, setWallMode] = useState(false)
@@ -55,6 +55,7 @@ const QuoridorGame = forwardRef(function QuoridorGame({ mode, difficulty, onStat
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

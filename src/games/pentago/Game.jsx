@@ -48,13 +48,14 @@ function makeInitialState() {
   }
 }
 
-const PentagoGame = forwardRef(function PentagoGame({ mode, difficulty, onStateChange }, ref) {
+const PentagoGame = forwardRef(function PentagoGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
   const { modeRef, diffRef } = useGameSync({
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

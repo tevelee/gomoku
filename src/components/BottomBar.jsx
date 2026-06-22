@@ -113,7 +113,7 @@ function SelectMenu({ label, value, options, onChange }) {
   )
 }
 
-function ActionMenu({ onUndo }) {
+function ActionMenu({ onUndo, aiFirst, onAiFirstChange, historyLen, pvai }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
   const menuRef = useRef(null)
@@ -163,6 +163,21 @@ function ActionMenu({ onUndo }) {
           >
             Undo move
           </button>
+          {pvai && (
+            <button
+              className={`action-option${aiFirst ? ' active' : ''}`}
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={aiFirst}
+              disabled={historyLen > 0}
+              onClick={() => {
+                onAiFirstChange?.(!aiFirst)
+                setOpen(false)
+              }}
+            >
+              AI moves first
+            </button>
+          )}
         </div>,
         document.body,
       )}
@@ -190,11 +205,13 @@ const DIFFICULTY_OPTIONS = [
 export default function BottomBar({
   mode, difficulty, scores, hint,
   gameModes = [], scoreLabels, gameOptions = [], gameSettings = {}, onGameSettingChange,
+  aiFirst = false, onAiFirstChange, historyLen = 0,
   onModeChange, onDifficultyChange, onNewGame,
   onUndo, onShowRules, hasRules = false,
 }) {
   const solo = mode === 'solo'
   const pvp = mode === 'pvp'
+  const pvai = mode === 'pvai'
   const modeOptions = gameModes.map(gameMode => MODE_OPTIONS_BY_GAME_MODE[gameMode]).filter(Boolean)
   const labels = scoreLabels ?? (solo ? ['Filled', 'Mistakes'] : pvp ? ['P1', 'P2'] : ['You', 'AI'])
   const showModeSelect = modeOptions.length > 1
@@ -261,7 +278,7 @@ export default function BottomBar({
           </button>
         )}
 
-        <ActionMenu onUndo={onUndo} />
+        <ActionMenu onUndo={onUndo} aiFirst={aiFirst} onAiFirstChange={onAiFirstChange} historyLen={historyLen} pvai={pvai} />
         <button className="btn-new" onClick={onNewGame}>New Game</button>
       </div>
     </div>

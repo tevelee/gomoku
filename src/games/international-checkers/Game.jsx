@@ -99,7 +99,7 @@ function finishMove(s, move, pvp) {
   }
 }
 
-const InternationalCheckersGame = forwardRef(function InternationalCheckersGame({ mode, difficulty, onStateChange }, ref) {
+const InternationalCheckersGame = forwardRef(function InternationalCheckersGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const [gs, setGs] = useState(makeInitialState)
   const historyRef = useRef([])
 
@@ -107,6 +107,7 @@ const InternationalCheckersGame = forwardRef(function InternationalCheckersGame(
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

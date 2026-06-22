@@ -11,6 +11,7 @@ const GameHost = forwardRef(function GameHost({
   mode,
   difficulty,
   settings,
+  aiFirst,
   onActiveStateChange,
 }, ref) {
   const gameRefs = useRef({})
@@ -68,6 +69,7 @@ const GameHost = forwardRef(function GameHost({
             mode={mode}
             difficulty={difficulty}
             settings={activeGameId === id ? settings : undefined}
+            aiFirst={activeGameId === id ? aiFirst : false}
             onStateChange={state => handleGameStateChange(id, state)}
           />
         </div>

@@ -34,7 +34,7 @@ function finishMove(state, key, pvp) {
   }
 }
 
-const DotsBoxesGame = forwardRef(function DotsBoxesGame({ mode, difficulty, settings, onStateChange }, ref) {
+const DotsBoxesGame = forwardRef(function DotsBoxesGame({ mode, difficulty, settings, aiFirst, onStateChange }, ref) {
   const boardSize = normalizeSize(settings?.boardSize)
   const [gs, setGs] = useState(() => makeState(boardSize))
   const [hoverEdge, setHoverEdge] = useState(null)
@@ -44,6 +44,7 @@ const DotsBoxesGame = forwardRef(function DotsBoxesGame({ mode, difficulty, sett
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

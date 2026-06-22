@@ -37,7 +37,7 @@ export default function createTileMergeGame(config) {
     showNextTile = false,
   } = config
 
-  const TileMergeGame = forwardRef(function TileMergeGame({ active = true, mode, difficulty, onStateChange }, ref) {
+  const TileMergeGame = forwardRef(function TileMergeGame({ active = true, mode, difficulty, aiFirst, onStateChange }, ref) {
     const activeDifficulty = normalizeDifficulty(difficulty)
     const bestRef = useRef(readStoredBest(storageKey))
     const [gs, setGs] = useState(() => makeState(activeDifficulty, bestRef.current))
@@ -49,6 +49,7 @@ export default function createTileMergeGame(config) {
       ref,
       mode,
       difficulty,
+      aiFirst,
       onStateChange,
       gs,
       setGs,

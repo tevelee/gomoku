@@ -337,7 +337,7 @@ function useCompactBackgammon() {
   return compact
 }
 
-const BackgammonGame = forwardRef(function BackgammonGame({ mode, difficulty, onStateChange }, ref) {
+const BackgammonGame = forwardRef(function BackgammonGame({ mode, difficulty, aiFirst, onStateChange }, ref) {
   const compact = useCompactBackgammon()
   const layout = useMemo(() => createLayout(compact), [compact])
   const [gs, setGs] = useState(makeInitialState)
@@ -347,6 +347,7 @@ const BackgammonGame = forwardRef(function BackgammonGame({ mode, difficulty, on
     ref,
     mode,
     difficulty,
+    aiFirst,
     onStateChange,
     gs,
     setGs,

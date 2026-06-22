@@ -47,6 +47,7 @@ export default function App() {
   const activeGame  = game ? playableGamesById[game] : null
   const activeSettings = getGameSettings(activeGame, game ? settingsByGame[game] : null)
   const activeMode = getGameMode(activeGame, mode)
+  const aiFirst = !!(game && settingsByGame[game]?.aiFirst)
 
   const handleNewGame = useCallback(() => {
     gameHostRef.current?.resetActive()
@@ -74,6 +75,15 @@ export default function App() {
         [settingId]: value,
       },
     }))
+  }, [game])
+
+  const handleAiFirstChange = useCallback((value) => {
+    if (!game) return
+    setSettingsByGame(settings => ({
+      ...settings,
+      [game]: { ...(settings[game] ?? {}), aiFirst: value },
+    }))
+    setTimeout(() => gameHostRef.current?.resetActive(), 0)
   }, [game])
 
   const handleLaunch = useCallback((newGame) => {
@@ -133,6 +143,7 @@ export default function App() {
           mode={activeMode}
           difficulty={difficulty}
           settings={activeSettings}
+          aiFirst={aiFirst}
           onActiveStateChange={setUiState}
         />
 
@@ -167,6 +178,9 @@ export default function App() {
           scoreLabels={activeGame?.scoreLabels}
           gameOptions={activeGame?.options}
           gameSettings={activeSettings}
+          aiFirst={aiFirst}
+          onAiFirstChange={handleAiFirstChange}
+          historyLen={uiState.historyLen}
           onGameSettingChange={handleSettingChange}
           onModeChange={handleModeChange}
           onDifficultyChange={setDifficulty}
